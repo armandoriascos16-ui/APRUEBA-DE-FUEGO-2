@@ -1,0 +1,1706 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Perfil de usuario y ficha de jugador juvenil cristiano",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "lastName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "username": {
+          "type": "string",
+          "maxLength": 60,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "avatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "age": {
+          "type": "number"
+        },
+        "birthDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "country": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "church": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "district": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "zone": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "isAdventist": {
+          "type": "boolean"
+        },
+        "yearsServing": {
+          "type": "number"
+        },
+        "maritalStatus": {
+          "type": "string",
+          "enum": [
+            "soltero",
+            "casado"
+          ]
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "points": {
+          "type": "number"
+        },
+        "level": {
+          "type": "number"
+        },
+        "levelName": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "user",
+            "moderator",
+            "admin",
+            "superadmin"
+          ]
+        },
+        "followingIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "followerIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isOfficialVerified": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "username",
+        "email",
+        "points",
+        "level",
+        "role"
+      ]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Publicaci\u00f3n social con testimonios, fotos y reacciones cristianas",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "authorUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "authorPoints": {
+          "type": "number"
+        },
+        "authorIsOfficial": {
+          "type": "boolean"
+        },
+        "authorChurch": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "videoUrl": {
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video"
+          ]
+        },
+        "bibleVerse": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "viewsCount": {
+          "type": "number"
+        },
+        "sharesCount": {
+          "type": "number"
+        },
+        "isOfficial": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "content",
+        "createdAt"
+      ]
+    },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "Reto espiritual juvenil verificable",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "F\u00e1cil",
+            "Medio",
+            "Dif\u00edcil",
+            "\u00c9pico"
+          ]
+        },
+        "points": {
+          "type": "number"
+        },
+        "participantsCount": {
+          "type": "number"
+        },
+        "deadline": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "requiredEvidence": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "isOfficial": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "points",
+        "difficulty"
+      ]
+    },
+    "ChallengeSubmission": {
+      "title": "ChallengeSubmission",
+      "description": "Evidencia fotogr\u00e1fica o testimonial de reto completado para revisi\u00f3n",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "challengeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "challengeTitle": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "challengePoints": {
+          "type": "number"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "userUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "userAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "userChurch": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "approximateLocation": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "commentReflection": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "mediaType": {
+          "type": "string",
+          "enum": [
+            "photo",
+            "video"
+          ]
+        },
+        "mediaUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "more_info"
+          ]
+        },
+        "adminFeedback": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "submittedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "challengeId",
+        "userId",
+        "userName",
+        "status",
+        "commentReflection"
+      ]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Comentario juvenil en publicaci\u00f3n con stickers y texto",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "postId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "authorUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "sticker": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "likes": {
+          "type": "number"
+        },
+        "parentId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "replyToUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "replyToUserId": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "id",
+        "postId",
+        "authorId",
+        "authorName",
+        "content",
+        "createdAt"
+      ]
+    },
+    "Reaction": {
+      "title": "Reaction",
+      "description": "Reacci\u00f3n cristiana juvenil a una publicaci\u00f3n",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "postId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "amen",
+            "aleluya",
+            "gloriaDios",
+            "diosEsBueno",
+            "bendiciones",
+            "estoyOrando",
+            "meInspiro"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "postId",
+        "userId",
+        "type",
+        "createdAt"
+      ]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Historia ef\u00edmera espiritual con duraci\u00f3n de 24 horas",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "authorUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "mediaUrl": {
+          "type": "string"
+        },
+        "mediaType": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video"
+          ]
+        },
+        "textContent": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "bibleVerse": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "expiresAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "viewsCount": {
+          "type": "number"
+        },
+        "reactionsCount": {
+          "type": "number"
+        },
+        "commentsCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "category",
+        "createdAt"
+      ]
+    },
+    "StoryComment": {
+      "title": "StoryComment",
+      "description": "Comentario u oraci\u00f3n en estado espiritual con respuestas anidadas",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storyId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "authorUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "sticker": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "likes": {
+          "type": "number"
+        },
+        "parentId": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "id",
+        "storyId",
+        "authorId",
+        "authorName",
+        "createdAt"
+      ]
+    },
+    "StoryReaction": {
+      "title": "StoryReaction",
+      "description": "Reacci\u00f3n con emoji o sticker cristiano a un estado espiritual",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storyId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "userUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "emoji",
+            "sticker"
+          ]
+        },
+        "reactionKey": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "emoji": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "storyId",
+        "userId",
+        "type",
+        "reactionKey",
+        "createdAt"
+      ]
+    },
+    "StoryView": {
+      "title": "StoryView",
+      "description": "Registro real y \u00fanico de visualizaci\u00f3n de un estado espiritual",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "storyId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "viewerId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "viewerName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "viewerUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "viewedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "storyId",
+        "viewerId",
+        "viewerName",
+        "viewedAt"
+      ]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Mensaje de chat directo o grupal cristiano",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "conversationId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "senderId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "senderName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "senderAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "mediaUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "sticker": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "isVoiceNote": {
+          "type": "boolean"
+        },
+        "voiceDuration": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "conversationId",
+        "senderId",
+        "senderName",
+        "content",
+        "timestamp"
+      ]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Grupo o comunidad de j\u00f3venes adventistas por ministerio o zona",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "avatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "leaderId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "leaderName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "isPublic": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "leaderId",
+        "leaderName",
+        "createdAt"
+      ]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Convocatoria o campamento juvenil adventista",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "time": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "country": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "venue": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "organizer": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "isOfficialSource": {
+          "type": "boolean"
+        },
+        "officialSourceUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "officialOrganization": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "interestedCount": {
+          "type": "number"
+        },
+        "attendingCount": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "local",
+            "ciudad",
+            "nacional",
+            "internacional"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "date",
+        "city",
+        "organizer"
+      ]
+    },
+    "Badge": {
+      "title": "Badge",
+      "description": "Insignia o galard\u00f3n desbloqueable por retos y servicio",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "reto",
+            "servicio",
+            "fe",
+            "puntos",
+            "liderazgo"
+          ]
+        },
+        "unlockedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "icon",
+        "description",
+        "category"
+      ]
+    },
+    "Achievement": {
+      "title": "Achievement",
+      "description": "Logro completado y certificado por un usuario",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "badgeId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "badgeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "badgeIcon": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "pointsAwarded": {
+          "type": "number"
+        },
+        "unlockedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "badgeId",
+        "badgeName",
+        "pointsAwarded",
+        "unlockedAt"
+      ]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Notificaci\u00f3n instant\u00e1nea de actividad social o retos",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "read": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "pointsAwarded": {
+          "type": "number"
+        },
+        "actorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "actorName": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "actorUsername": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "actorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "targetId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "targetType": {
+          "type": "string",
+          "maxLength": 50
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "title",
+        "message",
+        "read",
+        "createdAt"
+      ]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Reporte de contenido o usuario para moderaci\u00f3n",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "reporterId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "targetType": {
+          "type": "string",
+          "enum": [
+            "post",
+            "user",
+            "comment",
+            "submission"
+          ]
+        },
+        "targetId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "resolved",
+            "dismissed"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "reviewedBy": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "resolutionNotes": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "id",
+        "reporterId",
+        "targetType",
+        "targetId",
+        "reason",
+        "status",
+        "createdAt"
+      ]
+    },
+    "OfficialSource": {
+      "title": "OfficialSource",
+      "description": "Organizaci\u00f3n o canal adventista oficial verificado",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "organization": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "region": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "websiteUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "logo": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "verified": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "lastUpdated": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "eventCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "organization",
+        "websiteUrl",
+        "verified"
+      ]
+    },
+    "News": {
+      "title": "News",
+      "description": "Noticias juveniles cristianas e informaci\u00f3n adventista oficial",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 5000
+        },
+        "sourceName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "sourceUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "publishedAt": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "verified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "summary",
+        "content",
+        "sourceName",
+        "publishedAt"
+      ]
+    },
+    "Channel": {
+      "title": "Channel",
+      "description": "Canales y contenido audiovisual cristiano y adventista",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "creator": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "thumbnail": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "duration": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "views": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "verifiedOfficial": {
+          "type": "boolean"
+        },
+        "url": {
+          "type": "string",
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "creator",
+        "category",
+        "url"
+      ]
+    },
+    "Game": {
+      "title": "Game",
+      "description": "Juego b\u00edblico y trivia juvenil gamificada",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "F\u00e1cil",
+            "Medio",
+            "Dif\u00edcil"
+          ]
+        },
+        "questionsCount": {
+          "type": "number"
+        },
+        "pointsReward": {
+          "type": "number"
+        },
+        "icon": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "difficulty",
+        "pointsReward"
+      ]
+    },
+    "GameScore": {
+      "title": "GameScore",
+      "description": "Puntaje y registro de partida en juego b\u00edblico",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "gameId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "gameTitle": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "userName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "userAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "score": {
+          "type": "number"
+        },
+        "pointsAwarded": {
+          "type": "number"
+        },
+        "correctAnswers": {
+          "type": "number"
+        },
+        "totalQuestions": {
+          "type": "number"
+        },
+        "playedAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "gameId",
+        "userId",
+        "score",
+        "pointsAwarded",
+        "playedAt"
+      ]
+    },
+    "PrayerRequest": {
+      "title": "PrayerRequest",
+      "description": "Petici\u00f3n de oraci\u00f3n comunitaria juvenil",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "authorUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "authorChurch": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "isAnswered": {
+          "type": "boolean"
+        },
+        "testimony": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "prayingCount": {
+          "type": "number"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "salud",
+            "familia",
+            "mision",
+            "estudios",
+            "espiritual"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "title",
+        "description",
+        "category"
+      ]
+    },
+    "Testimonial": {
+      "title": "Testimonial",
+      "description": "Testimonio o respuesta a la oraci\u00f3n compartida con la comunidad",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "authorUsername": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "authorAvatar": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "authorChurch": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "story": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "amenCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "authorId",
+        "authorName",
+        "title",
+        "story"
+      ]
+    },
+    "IdeaItem": {
+      "title": "IdeaItem",
+      "description": "Propuesta o experiencia compartida de idea o plan de trabajo para ministerios",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "propuesta",
+            "experiencia",
+            "experiencia_revisada",
+            "plan_trabajo"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "pending",
+            "in_review",
+            "approved",
+            "changes_requested",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "authorId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "authorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 3500
+        },
+        "objective": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "targetAudience": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "estimatedDuration": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "type",
+        "status",
+        "authorId",
+        "authorName",
+        "description",
+        "objective",
+        "targetAudience",
+        "estimatedDuration"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Perfiles p\u00fablicos de los j\u00f3venes registrados en la comunidad"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Publicaciones del feed social juvenil"
+    },
+    "/challenges/{challengeId}": {
+      "schema": "Challenge",
+      "description": "Retos juveniles oficiales y comunitarios"
+    },
+    "/submissions/{submissionId}": {
+      "schema": "ChallengeSubmission",
+      "description": "Evidencias enviadas por los j\u00f3venes para certificaci\u00f3n"
+    },
+    "/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comentarios en publicaciones de la red social"
+    },
+    "/reactions/{reactionId}": {
+      "schema": "Reaction",
+      "description": "Registro de reacciones cristianas en publicaciones"
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Historias espirituales ef\u00edmeras de 24 horas"
+    },
+    "/story_comments/{commentId}": {
+      "schema": "StoryComment",
+      "description": "Colecci\u00f3n ra\u00edz de comentarios y oraciones en estados espirituales"
+    },
+    "/story_reactions/{reactionId}": {
+      "schema": "StoryReaction",
+      "description": "Colecci\u00f3n ra\u00edz de reacciones y stickers cristianos en estados espirituales"
+    },
+    "/story_views/{viewId}": {
+      "schema": "StoryView",
+      "description": "Colecci\u00f3n ra\u00edz de visualizaciones reales \u00fanicas de estados espirituales"
+    },
+    "/stories/{storyId}/comments/{commentId}": {
+      "schema": "StoryComment",
+      "description": "Comentarios y oraciones en un estado espiritual"
+    },
+    "/stories/{storyId}/reactions/{userId}": {
+      "schema": "StoryReaction",
+      "description": "Reacci\u00f3n con emoji o sticker cristiano en un estado"
+    },
+    "/stories/{storyId}/views/{viewerId}": {
+      "schema": "StoryView",
+      "description": "Registro de visualizaci\u00f3n \u00fanica de un estado espiritual"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Mensajes en chats directos y de grupos"
+    },
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "Grupos y ministerios juveniles cristianos"
+    },
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Eventos y camporees adventistas certificados"
+    },
+    "/badges/{badgeId}": {
+      "schema": "Badge",
+      "description": "Insignias y medallas disponibles"
+    },
+    "/achievements/{achievementId}": {
+      "schema": "Achievement",
+      "description": "Logros desbloqueados por los usuarios"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "Notificaciones recibidas por los usuarios"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Reportes enviados al panel de moderaci\u00f3n y seguridad"
+    },
+    "/official_sources/{sourceId}": {
+      "schema": "OfficialSource",
+      "description": "Fuentes y organizaciones adventistas oficiales verificadas"
+    },
+    "/news/{newsId}": {
+      "schema": "News",
+      "description": "Noticias juveniles cristianas e informaci\u00f3n adventista oficial"
+    },
+    "/channels/{channelId}": {
+      "schema": "Channel",
+      "description": "Canales audiovisuales adventistas de m\u00fasica y predicaci\u00f3n"
+    },
+    "/games/{gameId}": {
+      "schema": "Game",
+      "description": "Juegos b\u00edblicos y din\u00e1micas interactivas"
+    },
+    "/game_scores/{scoreId}": {
+      "schema": "GameScore",
+      "description": "Registro de partidas y puntuaciones de juegos b\u00edblicos"
+    },
+    "/prayers/{prayerId}": {
+      "schema": "PrayerRequest",
+      "description": "Peticiones de oraci\u00f3n comunitaria"
+    },
+    "/testimonials/{testimonialId}": {
+      "schema": "Testimonial",
+      "description": "Muro de testimonios y respuestas a oraciones"
+    },
+    "/ideas_ja/{ideaId}": {
+      "schema": "IdeaItem",
+      "description": "Ideas colaborativas, actividades y planes de trabajo cristianos"
+    },
+    "/ideas_comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comentarios en ideas y planes de trabajo"
+    },
+    "/ideas_ratings/{ratingId}": {
+      "schema": "GameScore",
+      "description": "Valoraciones de 1 a 5 estrellas para ideas y planes"
+    },
+    "/ideas_favorites/{favId}": {
+      "schema": "GameScore",
+      "description": "Ideas guardadas en favoritos por los usuarios"
+    }
+  }
+}

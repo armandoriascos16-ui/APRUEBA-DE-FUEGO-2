@@ -1,0 +1,594 @@
+# PROMPT MAESTRO PARA GOOGLE AI STUDIO
+# A PRUEBA DE FUEGO: JUEGOS BÍBLICOS DE 100 PREGUNTAS Y DEBATES BÍBLICOS CON IA
+
+## OBJETIVO GENERAL
+
+Quiero ampliar y mejorar el área de Juegos de mi aplicación existente **A PRUEBA DE FUEGO** mediante dos funciones:
+
+**FUNCIÓN 1: JUEGOS BÍBLICOS AMPLIADOS.** Cada sesión debe ofrecer hasta 100 preguntas distintas, con dificultad progresiva, respuestas correctas, explicaciones y referencias bíblicas verificables.
+
+**FUNCIÓN 2: DEBATES BÍBLICOS CON IA.** Agregar una nueva sección en la que los usuarios puedan elegir o proponer temas bíblicos y debatir con una inteligencia artificial capaz de analizar argumentos, defender posturas, presentar objeciones, responder contraargumentos y explicar las diferencias entre interpretaciones cristianas.
+
+## REGLA ABSOLUTA: SOLO AGREGAR Y MEJORAR
+
+No reconstruyas la aplicación desde cero. No elimines, reemplaces ni dañes funciones existentes. Inspecciona primero el proyecto y realiza cambios mínimos, aislados y compatibles.
+
+Protege especialmente:
+
+- La radio cristiana.
+- La transmisión en vivo.
+- Los perfiles y las cuentas.
+- El registro y el inicio de sesión.
+- Las publicaciones y los Estados.
+- Los sistemas de puntos, niveles y logros existentes.
+- La navegación y las demás secciones de la aplicación.
+
+Si una modificación puede afectar una función protegida, busca una solución alternativa antes de continuar.
+
+---
+
+# PARTE 1. JUEGOS BÍBLICOS CON 100 PREGUNTAS POR SESIÓN
+
+## 1. Investigar el sistema actual
+
+Antes de modificar el código:
+
+1. Inspecciona cómo se crean, almacenan y muestran las preguntas.
+2. Averigua por qué las sesiones actuales terminan después de aproximadamente 6 u 8 preguntas.
+3. Identifica cómo se calculan los puntos, los aciertos, los errores y los niveles.
+4. Comprueba si existe un banco de preguntas o si se generan dinámicamente.
+5. Revisa cómo se guarda el progreso.
+6. Identifica los componentes que pueden ampliarse sin reconstruir el juego.
+
+No te limites a cambiar el contador de preguntas. Debe existir contenido real para toda la sesión.
+
+## 2. Sesiones de hasta 100 preguntas reales
+
+Cada sesión deberá admitir 100 preguntas diferentes cuando haya 100 preguntas válidas disponibles para la categoría seleccionada.
+
+Cada pregunta debe incluir, según corresponda:
+
+- Identificador único.
+- Enunciado.
+- Opciones de respuesta.
+- Respuesta correcta.
+- Explicación de la respuesta.
+- Referencia bíblica verificable.
+- Categoría.
+- Nivel de dificultad.
+
+Reglas obligatorias:
+
+- No repetir preguntas dentro de la misma sesión.
+- No rellenar una sesión con preguntas inventadas o duplicadas solo para llegar a 100.
+- Si una categoría tiene menos de 100 preguntas verificadas, informar cuántas hay y permitir una sesión más corta o combinar categorías si el usuario lo acepta.
+- No revelar la respuesta correcta antes de que el usuario responda.
+- Mostrar la numeración real, por ejemplo, “Pregunta 37 de 100”.
+- Calcular correctamente la puntuación.
+- Conservar el progreso cuando el usuario salga y vuelva, si la arquitectura permite persistencia.
+- Presentar un resumen al finalizar.
+- Permitir revisar las respuestas y sus explicaciones.
+- Conservar las puntuaciones anteriores al iniciar una nueva sesión.
+
+## 3. Dificultad realmente progresiva
+
+Distribuye las preguntas de cada sesión de la siguiente manera:
+
+**Preguntas 1–20: Básico**
+- Personajes bíblicos conocidos.
+- Libros de la Biblia.
+- Acontecimientos principales.
+- Enseñanzas fundamentales.
+
+**Preguntas 21–40: Intermedio**
+- Contexto histórico.
+- Parábolas y milagros.
+- Viajes y acontecimientos.
+- Relaciones entre personajes.
+- Comprensión de pasajes.
+
+**Preguntas 41–60: Avanzado**
+- Interpretación contextual.
+- Referencias cruzadas.
+- Comparación de pasajes.
+- Temas doctrinales.
+- Relaciones entre el Antiguo y el Nuevo Testamento.
+
+**Preguntas 61–80: Experto**
+- Análisis histórico y literario.
+- Evaluación de argumentos.
+- Interpretaciones alternativas.
+- Contexto profético y doctrinal.
+- Razonamiento a partir de varios pasajes.
+
+**Preguntas 81–100: Maestro**
+- Análisis profundo de pasajes complejos.
+- Comparación razonada de interpretaciones.
+- Evaluación de premisas y conclusiones.
+- Aplicación contextual.
+- Identificación de supuestos interpretativos.
+- Preguntas que requieran conectar diferentes partes de la Biblia.
+
+La dificultad debe aumentar por la complejidad del razonamiento, no por utilizar datos irrelevantes o preguntas engañosas.
+
+No etiquetes una pregunta como experta únicamente por ser poco conocida. Debe exigir comprensión, análisis o interpretación más profunda.
+
+## 4. Diversidad de formatos
+
+Utiliza los formatos que sean compatibles con el juego:
+
+- Opción múltiple.
+- Verdadero o falso.
+- Completar una frase bíblica breve.
+- Identificar personajes.
+- Relacionar acontecimientos.
+- Ordenar hechos históricos.
+- Interpretar un pasaje.
+- Comparar referencias bíblicas.
+- Analizar una afirmación doctrinal.
+- Seleccionar la interpretación mejor respaldada por el contexto.
+- Resolver situaciones prácticas a partir de principios bíblicos.
+
+Mantén los formatos actuales y amplíalos de manera incremental.
+
+## 5. Banco de preguntas confiable
+
+Las preguntas deben proceder de contenido verificable. No permitas que la IA invente referencias o presente una respuesta generada como si ya estuviera comprobada.
+
+Implementa un mecanismo de revisión que compruebe:
+
+1. Que el libro bíblico existe.
+2. Que el capítulo y el versículo citados son válidos.
+3. Que la referencia respalda la respuesta propuesta.
+4. Que la explicación no contradice el contexto del pasaje.
+5. Que las opciones incorrectas no generen ambigüedad innecesaria.
+6. Que exista una respuesta claramente correcta cuando el formato lo requiera.
+7. Que la pregunta no dependa de una tradición doctrinal específica sin indicarlo.
+
+Distingue entre:
+
+- Hechos expresamente relatados en el texto.
+- Conclusiones obtenidas mediante razonamiento.
+- Interpretaciones doctrinales discutidas.
+- Datos históricos externos a la Biblia.
+
+Si una pregunta tiene varias interpretaciones cristianas razonables, formula el enunciado con precisión o conviértela en una pregunta de análisis que reconozca las diferentes posturas.
+
+No afirmes que una pregunta fue verificada si no se comprobó realmente.
+
+Cuando una pregunta sea ambigua o tenga una referencia incorrecta, corrígela o exclúyela del banco hasta que pueda validarse.
+
+## 6. Categorías
+
+Conserva las categorías actuales y agrega, si son compatibles:
+
+- Antiguo Testamento.
+- Nuevo Testamento.
+- Personajes bíblicos.
+- Parábolas de Jesús.
+- Milagros de Jesús.
+- Profecías.
+- Daniel y Apocalipsis.
+- Historia bíblica.
+- Libros de la Biblia.
+- Enseñanzas de Jesús.
+- Vida cristiana.
+- Doctrinas bíblicas.
+- Jóvenes y decisiones cristianas.
+- Historia de la iglesia.
+- Temas adventistas, cuando correspondan.
+
+Cada categoría debe disponer de un banco suficiente de preguntas reales y verificadas.
+
+## 7. Evaluación final del juego
+
+Al finalizar las 100 preguntas, presenta:
+
+- Total de preguntas respondidas.
+- Respuestas correctas e incorrectas.
+- Porcentaje de aciertos.
+- Puntuación obtenida.
+- Nivel alcanzado, si el sistema lo permite.
+- Resumen de los temas dominados.
+- Temas que conviene estudiar más.
+- Referencias bíblicas para repasar.
+- Opción de revisar las preguntas.
+- Opción de iniciar otra sesión.
+
+La evaluación debe ser educativa y respetuosa. No confundas la puntuación del juego con el valor espiritual o la fe de una persona.
+
+---
+
+# PARTE 2. NUEVA SECCIÓN: DEBATES BÍBLICOS CON IA
+
+## 8. Agregar una sección independiente
+
+Dentro del área de Juegos, agrega una nueva sección llamada:
+
+**DEBATES BÍBLICOS**
+
+No reemplaces los juegos existentes. La nueva sección debe tener su propia interfaz y funcionar de manera independiente.
+
+Debe permitir que un usuario debata sobre temas bíblicos, exponga una interpretación, presente versículos y argumentos, reciba objeciones y analice distintas posturas.
+
+La IA debe funcionar como un interlocutor informado, no como un sistema que se limita a aprobar todo lo que diga el usuario.
+
+## 9. Proponer temas de debate
+
+La IA debe poder sugerir temas automáticamente y permitir que el usuario escriba otros.
+
+Incluye temas como:
+
+- Salvación, fe y obras.
+- Gracia y obediencia.
+- Ley de Dios.
+- Sábado y domingo.
+- Segunda venida de Cristo.
+- Estado de los muertos y resurrección.
+- Juicio y justicia divina.
+- Santuario celestial.
+- Profecías de Daniel y Apocalipsis.
+- Bautismo.
+- Oración.
+- Dones espirituales.
+- Interpretación de parábolas.
+- Vida cristiana.
+- Historia de la iglesia.
+- Diferencias doctrinales entre denominaciones.
+- Pasajes bíblicos difíciles.
+- Preguntas que suelen plantear los creyentes y los no creyentes.
+
+Para cada propuesta, presenta:
+
+- Título.
+- Pregunta central.
+- Breve explicación del asunto.
+- Nivel recomendado.
+- Pasajes bíblicos iniciales.
+- Principales posturas que podrían examinarse.
+
+El usuario podrá aceptar el tema, pedir nuevas propuestas o escribir uno propio.
+
+No presentes las sugerencias como una lista de doctrinas indiscutibles. Identifica cuándo se trata de asuntos interpretados de distintas maneras por comunidades cristianas.
+
+## 10. Cuatro niveles de debate
+
+### Nivel 1: Principiante
+Argumentos sencillos, explicaciones claras, pocos pasajes por intervención y orientación para formular preguntas.
+
+### Nivel 2: Intermedio
+Comparación de pasajes, objeciones básicas, contexto y evaluación de los argumentos principales.
+
+### Nivel 3: Avanzado
+Análisis contextual e histórico, referencias cruzadas, contraargumentos, inferencias y evaluación de interpretaciones alternativas.
+
+### Nivel 4: Experto o teológico
+Análisis profundo de pasajes complejos, evaluación de premisas, argumentos encadenados, objeciones sólidas, comparación de sistemas interpretativos y reconocimiento de incertidumbres.
+
+La dificultad debe reflejarse en la profundidad del análisis, no simplemente en respuestas más largas o vocabulario complicado.
+
+El usuario debe poder escoger el nivel antes de empezar cada debate.
+
+## 11. Modalidades de debate
+
+Implementa estas modalidades:
+
+**A. Debatir con la IA.** El usuario expone su posición y la IA responde, argumenta y plantea preguntas pertinentes.
+
+**B. La IA defiende una postura asignada.** El usuario selecciona una posición y la IA adopta otra para analizar las razones de cada una. La postura asignada debe identificarse claramente como parte del ejercicio.
+
+**C. Comparar posturas.** La IA presenta dos o más interpretaciones cristianas relevantes, explica sus fundamentos y analiza sus objeciones.
+
+**D. Preparar un debate.** La IA ayuda a preparar la introducción, los argumentos, las referencias, las objeciones y las respuestas.
+
+**E. Examinar un argumento.** El usuario presenta un razonamiento o una interpretación y la IA identifica fortalezas, debilidades, supuestos y posibles contraargumentos.
+
+Permite cambiar de modalidad al comenzar otro debate, sin alterar el historial anterior.
+
+---
+
+# PARTE 3. MOTOR DE RAZONAMIENTO Y ARGUMENTACIÓN BÍBLICA
+
+## 12. La IA debe analizar ambas posturas
+
+Esta es una condición fundamental.
+
+La IA no debe limitarse a acumular versículos que parezcan apoyar una conclusión. Debe analizar cómo se relacionan los textos con la afirmación debatida y examinar los argumentos de ambas partes.
+
+Para cada cuestión importante, debe poder:
+
+1. Identificar la afirmación central.
+2. Aclarar qué significa cada término relevante.
+3. Identificar los supuestos del argumento.
+4. Presentar los pasajes que respaldan la interpretación.
+5. Examinar el contexto inmediato e histórico.
+6. Considerar otros pasajes pertinentes.
+7. Identificar posibles objeciones.
+8. Evaluar la fuerza de esas objeciones.
+9. Responderlas cuando haya fundamentos suficientes.
+10. Reconocer los argumentos de la otra parte que sean válidos.
+11. Distinguir entre una contradicción real y una diferencia aparente.
+12. Explicar qué conclusiones están bien respaldadas y cuáles siguen siendo discutibles.
+
+No debe seleccionar únicamente los textos que favorezcan la postura asignada e ignorar deliberadamente los que plantean dificultades.
+
+Si un pasaje parece contradecir una interpretación, la IA debe examinar esa dificultad de manera explícita, no ocultarla.
+
+## 13. Estructura de los argumentos
+
+Cuando resulte útil, organiza cada intervención en:
+
+- **Afirmación:** qué se sostiene.
+- **Razón principal:** por qué se sostiene.
+- **Fundamento bíblico:** referencias relevantes.
+- **Contexto:** qué significan los pasajes en su contexto.
+- **Inferencia:** cómo se pasa de los textos a la conclusión.
+- **Objeción:** cuál sería una crítica importante.
+- **Respuesta:** cómo puede responderse a la crítica.
+- **Evaluación:** qué tan sólida es la conclusión.
+- **Conclusión provisional:** qué se ha establecido y qué queda abierto.
+
+Adapta la extensión al nivel elegido. No es necesario mostrar todos los apartados en cada mensaje breve.
+
+La IA debe poder responder a una objeción específica del usuario sin ignorar el argumento que acaba de recibir.
+
+## 14. Reconocer las diferencias doctrinales entre cristianos
+
+Cuando haya diferencias entre denominaciones, escuelas teológicas o tradiciones de interpretación:
+
+- Describe las posiciones con precisión y respeto.
+- Explica los fundamentos bíblicos que sus defensores suelen utilizar.
+- Presenta las objeciones principales que cada postura recibe.
+- Evita caricaturizar o tergiversar las creencias ajenas.
+- No atribuyas a una denominación una doctrina que no representa correctamente.
+- Distingue entre el texto bíblico y las conclusiones teológicas elaboradas a partir de él.
+- Identifica cuándo una interpretación es ampliamente compartida y cuándo es minoritaria o controvertida, siempre que haya información fiable para hacerlo.
+- No finjas que existe consenso cuando no lo hay.
+- No afirmes que todas las interpretaciones tienen la misma fuerza si la evidencia disponible permite hacer distinciones.
+- Explica qué evidencias favorecen cada postura y cuáles son sus dificultades.
+
+Cuando corresponda, la IA debe poder decir:
+
+“Esta cuestión tiene distintas interpretaciones cristianas. Voy a presentar los argumentos de cada postura, los pasajes que se utilizan y las principales objeciones, distinguiendo lo que el texto afirma explícitamente de las conclusiones interpretativas”.
+
+No debe declarar automáticamente ganadora una postura por pertenecer a una denominación particular.
+
+## 15. Honestidad intelectual y reconocimiento de límites
+
+La IA debe argumentar con firmeza cuando haya fundamentos suficientes, pero también reconocer sus límites.
+
+Debe poder expresar:
+
+- “El pasaje citado no demuestra por sí solo esa conclusión”.
+- “Esta interpretación necesita más contexto”.
+- “Existen varias lecturas cristianas de este texto”.
+- “Este argumento presenta una dificultad que todavía no hemos resuelto”.
+- “No tengo evidencia suficiente para afirmar eso”.
+- “Debo corregir mi respuesta anterior porque la referencia no respalda lo que dije”.
+
+No debe inventar citas, fuentes históricas, declaraciones de autores ni consensos teológicos.
+
+No debe presentar su conclusión como una revelación divina, una autoridad infalible o una declaración de fe personal.
+
+El objetivo es ayudar a razonar y estudiar las Escrituras, no fingir que una IA puede resolver infaliblemente todas las diferencias teológicas.
+
+## 16. Evitar errores de argumentación
+
+Configura la IA para que identifique, cuando corresponda:
+
+- Sacar un versículo de contexto.
+- Confundir correlación con causalidad.
+- Suponer que una interpretación es correcta solo porque es tradicional.
+- Suponer que una interpretación es falsa solo porque es minoritaria.
+- Presentar únicamente evidencia favorable.
+- Atacar a la persona en lugar del argumento.
+- Cambiar la postura del interlocutor para hacerla más fácil de refutar.
+- Confundir una posibilidad con una certeza.
+- Confundir una conclusión interpretativa con una afirmación literal del texto.
+- Utilizar un pasaje como prueba de una conclusión que realmente no contiene.
+
+La IA debe señalar estos problemas respetuosamente y explicar cómo fortalecer el argumento.
+
+No debe utilizar estos criterios para descalificar automáticamente una postura doctrinal. Debe explicar el razonamiento específico que presenta el problema.
+
+---
+
+# PARTE 4. VERIFICACIÓN DE PASAJES Y FUENTES
+
+## 17. Referencias bíblicas verificables
+
+La precisión bíblica es esencial tanto en los juegos como en los debates.
+
+Implementa, cuando la arquitectura lo permita, un sistema de consulta o recuperación de referencias bíblicas confiables.
+
+La IA debe:
+
+- Verificar que los libros, capítulos y versículos citados existan.
+- Comprobar que la referencia sea pertinente para la afirmación.
+- Examinar el contexto inmediato.
+- Diferenciar citas literales, paráfrasis e interpretaciones.
+- Corregir las referencias incorrectas cuando se detecten.
+- Reconocer si no puede verificar una cita.
+- Evitar atribuir a un pasaje palabras que no aparecen en él.
+
+Si se utilizan traducciones bíblicas protegidas por derechos de autor, respeta sus condiciones de uso. Prioriza referencias, explicaciones propias y traducciones que puedan utilizarse legalmente.
+
+Si la aplicación no dispone de una fuente de consulta verificable, no afirmes que todas las citas han sido comprobadas automáticamente.
+
+## 18. Fuentes históricas y teológicas
+
+Cuando el debate requiera información histórica externa a la Biblia:
+
+- Distingue los datos históricos de las interpretaciones teológicas.
+- Utiliza fuentes confiables y pertinentes cuando estén disponibles.
+- No inventes libros, autores, citas ni referencias.
+- Indica cuando una afirmación histórica no se ha verificado.
+- No atribuyas una posición a una denominación sin fundamento suficiente.
+
+La IA debe evitar presentar una afirmación externa como si estuviera escrita literalmente en la Biblia.
+
+---
+
+# PARTE 5. EXPERIENCIA DE USUARIO
+
+## 19. Flujo de debate
+
+El usuario debe poder:
+
+1. Entrar a Debates Bíblicos.
+2. Elegir un tema sugerido o escribir uno propio.
+3. Seleccionar un nivel de dificultad.
+4. Escoger una modalidad de debate.
+5. Leer la pregunta central y los pasajes iniciales.
+6. Exponer su postura.
+7. Recibir una respuesta razonada de la IA.
+8. Presentar objeciones y nuevos pasajes.
+9. Continuar el debate manteniendo el contexto.
+10. Finalizar la conversación cuando lo desee.
+11. Obtener un resumen final.
+12. Iniciar otro debate sin perder el historial anterior.
+
+Incluye estados de carga, mensajes de error y una opción para reintentar si la IA no responde.
+
+## 20. Resumen final del debate
+
+Al finalizar, presenta:
+
+- Tema y pregunta central.
+- Postura inicial del usuario.
+- Principales argumentos de cada posición.
+- Referencias bíblicas relevantes.
+- Objeciones planteadas.
+- Respuestas ofrecidas.
+- Puntos de acuerdo.
+- Desacuerdos pendientes.
+- Fortalezas y debilidades de los argumentos.
+- Preguntas que todavía necesitan investigación.
+- Referencias recomendadas para continuar el estudio.
+
+No declares que el usuario ha perdido su fe, que tiene una fe inferior ni que es espiritualmente superior por el resultado del debate.
+
+La evaluación debe centrarse en la calidad de los argumentos, la precisión de las referencias y la claridad del razonamiento.
+
+## 21. Evaluación educativa opcional
+
+Si el usuario desea recibir una evaluación, califica aspectos como:
+
+- Claridad de la postura.
+- Uso contextual de los pasajes.
+- Coherencia lógica.
+- Calidad de las objeciones.
+- Capacidad de responder contraargumentos.
+- Reconocimiento de límites y matices.
+
+Explica las razones de la evaluación y ofrece sugerencias de mejora.
+
+No confundas el rendimiento argumentativo con la verdad absoluta de una doctrina ni con el valor personal o espiritual del usuario.
+
+---
+
+# PARTE 6. IMPLEMENTACIÓN TÉCNICA
+
+## 22. IA real y segura
+
+Antes de desarrollar el motor de debates:
+
+1. Inspecciona si el proyecto ya utiliza una IA o un servicio de modelos de lenguaje.
+2. Reutiliza el servicio actual si resulta compatible.
+3. Si hace falta una API, implementa la conexión de manera segura.
+4. No expongas claves privadas en el navegador ni en el código público.
+5. No simules una conversación inteligente con respuestas fijas.
+6. No declares que la IA funciona si el servicio no está conectado y probado.
+7. Maneja errores de red, límites de uso y respuestas incompletas.
+8. Controla el costo y evita llamadas innecesarias.
+9. Mantén el contexto del debate sin enviar más información de la necesaria.
+10. Permite finalizar o reiniciar una sesión.
+
+Si falta una API, credencial, fuente bíblica o servicio necesario, informa exactamente qué falta. No inventes configuraciones ni afirmes que la función está terminada.
+
+## 23. Persistencia y privacidad
+
+Conserva el progreso de los juegos y el historial de debates si la arquitectura actual lo permite.
+
+Respeta la autenticación y los permisos existentes. Los usuarios no deben poder acceder a los debates privados de otras cuentas.
+
+No alteres las reglas generales de seguridad de la aplicación. Si necesitas nuevos registros o estructuras de datos, agrégalos de forma compatible con los existentes.
+
+---
+
+# PARTE 7. PRUEBAS OBLIGATORIAS
+
+## 24. Pruebas de los juegos
+
+Comprueba que:
+
+1. Una sesión llega a 100 preguntas cuando existen 100 preguntas válidas.
+2. No se repiten preguntas dentro de la sesión.
+3. La dificultad aumenta realmente.
+4. Las respuestas y la puntuación son correctas.
+5. Las referencias bíblicas son válidas y pertinentes.
+6. Las preguntas ambiguas se corrigen o se excluyen.
+7. El progreso se conserva según lo previsto.
+8. El resumen final coincide con las respuestas dadas.
+
+## 25. Pruebas de Debates Bíblicos
+
+Comprueba que:
+
+1. La IA propone temas coherentes.
+2. El usuario puede proponer su propio tema.
+3. Los cuatro niveles producen diferentes profundidades de análisis.
+4. La IA responde a los argumentos reales del usuario.
+5. La IA puede identificar fortalezas y debilidades en ambas posturas.
+6. Las objeciones se responden sin ignorar lo que el usuario dijo.
+7. Las diferencias doctrinales se explican con precisión y respeto.
+8. La IA distingue las afirmaciones explícitas del texto de las interpretaciones.
+9. No se inventan referencias bíblicas ni citas históricas.
+10. La IA reconoce la incertidumbre cuando corresponde.
+11. El resumen final refleja la conversación real.
+12. Los errores de conexión se manejan correctamente.
+
+## 26. Pruebas de regresión
+
+Comprueba que continúen funcionando los juegos anteriores y todas las demás funciones de la aplicación, incluidos perfiles, cuentas, publicaciones, radio y transmisión en vivo.
+
+No declares una prueba exitosa si no la ejecutaste. Si alguna comprobación requiere acceso a un servicio externo o a un dispositivo real que no está disponible, documenta la limitación.
+
+---
+
+# PARTE 8. ORDEN DE EJECUCIÓN
+
+Sigue este orden:
+
+1. Inspeccionar la arquitectura actual.
+2. Identificar la causa del límite de preguntas.
+3. Presentar un plan de cambios mínimos.
+4. Ampliar los juegos con un banco verificable de preguntas.
+5. Implementar los niveles de dificultad progresiva.
+6. Agregar Debates Bíblicos como sección independiente.
+7. Conectar la IA real de forma segura.
+8. Implementar el análisis de argumentos de ambas partes.
+9. Incorporar el reconocimiento de diferencias doctrinales y de incertidumbre.
+10. Implementar la verificación de referencias según los recursos disponibles.
+11. Ejecutar pruebas funcionales y de regresión.
+12. Presentar un informe final.
+
+No sustituyas todo el código de un archivo si puedes realizar una modificación localizada y segura. Si un cambio puede afectar otra función, explica el riesgo y busca una alternativa.
+
+# INSTRUCCIÓN FINAL
+
+Quiero que A PRUEBA DE FUEGO se convierta en una aplicación de aprendizaje bíblico más completa, con juegos desafiantes y debates de profundidad progresiva.
+
+Los juegos deben ofrecer hasta 100 preguntas reales, variadas y verificables por sesión. Los debates deben permitir examinar argumentos de ambas partes, utilizar las Escrituras en contexto, responder objeciones, explicar diferencias doctrinales con respeto y reconocer los límites de la evidencia.
+
+**Solo agregar y mejorar. No reconstruir la aplicación, no borrar información y no dañar ninguna función que ya funciona.**
+
+Al finalizar, entrega un informe preciso con:
+
+- Funciones implementadas.
+- Archivos creados y modificados.
+- Forma de almacenamiento de las preguntas.
+- Mecanismo de verificación bíblica.
+- Servicio de IA utilizado.
+- Pruebas realmente ejecutadas.
+- Limitaciones y configuraciones pendientes.

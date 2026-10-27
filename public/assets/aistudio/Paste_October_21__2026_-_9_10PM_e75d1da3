@@ -1,0 +1,509 @@
+# PROMPT MAESTRO PARA MEJORAR LA APP “A PRUEBA DE FUEGO JUVENIL”
+
+## 1. OBJETIVO GENERAL
+
+Quiero que trabajes sobre mi aplicación existente llamada **“A Prueba de Fuego Juvenil”**, una plataforma cristiana juvenil de la Iglesia Adventista del Séptimo Día.
+
+Tu misión es revisar, corregir, mejorar y ampliar las funciones actuales de la aplicación. No quiero únicamente un diseño visual o botones que aparenten funcionar. Quiero funcionalidades reales, conectadas a una base de datos, con almacenamiento persistente, autenticación, permisos, validaciones y actualizaciones automáticas cuando corresponda.
+
+**Regla principal:** conserva las funciones que ya funcionan, identifica los errores existentes y corrige la aplicación sin destruir los datos ni las características actuales. Antes de modificar el código, revisa la arquitectura, la base de datos, el sistema de autenticación, el almacenamiento y las funciones existentes.
+
+No reemplaces funcionalidades reales con datos ficticios, publicaciones de demostración, avatares automáticos, vistas simuladas ni puntuaciones inventadas.
+
+## 2. PUBLICACIONES CON FOTOS Y VIDEOS
+
+Repara completamente el sistema de publicaciones.
+
+Necesito que los usuarios registrados puedan:
+
+- Subir fotografías desde su dispositivo.
+- Subir videos desde su dispositivo.
+- Escribir descripciones y textos para acompañar sus publicaciones.
+- Publicar contenido para que otros usuarios autorizados puedan verlo.
+- Consultar las publicaciones de otros jóvenes en un feed comunitario.
+- Ver todas sus publicaciones anteriores en su propio perfil.
+- Abrir, reproducir y visualizar correctamente los archivos publicados.
+- Eliminar sus propias publicaciones y editar su descripción cuando corresponda.
+- Ver comentarios, reacciones y fechas reales de publicación, si estas funciones están habilitadas.
+
+Los archivos deben guardarse en un servicio de almacenamiento persistente, y los datos de cada publicación deben guardarse en la base de datos.
+
+No almacenes los archivos únicamente en la memoria temporal del dispositivo. Las publicaciones deben continuar disponibles después de cerrar sesión, reiniciar la aplicación o entrar desde otro dispositivo.
+
+Implementa controles de tamaño, formato, permisos y seguridad. Muestra el progreso de carga, los mensajes de error y la confirmación cuando una publicación se haya guardado correctamente.
+
+Las publicaciones deben pertenecer al usuario que las creó y estar vinculadas a su perfil mediante su identificador real.
+
+## 3. ELIMINAR AVATARES FICTICIOS
+
+Elimina los avatares, perfiles de ejemplo y usuarios ficticios que aparezcan como si fueran personas reales.
+
+Quiero que:
+
+- Los perfiles reales se creen únicamente cuando una persona complete el registro y la autenticación.
+- Cada perfil esté vinculado a una cuenta auténtica de la aplicación.
+- Los usuarios puedan subir su propia fotografía de perfil voluntariamente.
+- Si una persona no tiene fotografía, se muestre una imagen neutral o un espacio sin fotografía, nunca una persona inventada.
+- No aparezcan seguidores, publicaciones, comentarios, nombres o estadísticas ficticias presentados como reales.
+- Los administradores puedan identificar y retirar cuentas de prueba sin afectar las cuentas legítimas.
+
+Si existen datos de demostración, sepáralos del entorno de producción y no los muestres a usuarios reales.
+
+## 4. SISTEMA DE PUNTOS Y RETOS VERIFICADOS
+
+Construye un sistema real de puntos y recompensas para fomentar la participación cristiana y misionera.
+
+Los usuarios no deben poder ganar puntos simplemente pulsando botones, publicando contenido cualquiera, aumentando artificialmente las vistas o modificando valores desde el navegador.
+
+Los puntos deben concederse únicamente cuando se cumplan los requisitos de un reto y se presente la evidencia solicitada.
+
+Flujo obligatorio:
+
+1. El usuario selecciona un reto disponible.
+2. La aplicación muestra las instrucciones, los requisitos, la fecha límite y la recompensa.
+3. El usuario realiza la actividad.
+4. El usuario presenta la evidencia solicitada, como una fotografía, un video, una reflexión escrita o una confirmación válida.
+5. La aplicación valida que se hayan cumplido los requisitos mediante reglas automáticas cuando sea posible.
+6. Si la evidencia requiere una comprobación que la tecnología no puede realizar de manera confiable, la solicitud queda pendiente de revisión por un moderador autorizado.
+7. Cuando la validación sea satisfactoria, el servidor concede los puntos automáticamente.
+8. La aplicación actualiza el perfil, el historial de puntos, las estadísticas y la clasificación.
+
+Implementa las siguientes protecciones:
+
+- Evitar que una misma evidencia genere puntos repetidamente.
+- Impedir que un usuario se otorgue puntos a sí mismo desde el cliente.
+- Guardar un historial auditable de cada recompensa.
+- Evitar recompensas duplicadas por solicitudes simultáneas.
+- Permitir que los administradores revisen evidencias y corrijan errores con un registro de auditoría.
+- Mostrar los puntos obtenidos, los pendientes y los rechazados, con sus motivos.
+- No considerar una fotografía como prueba automática de que una actividad ocurrió si no existe una validación suficiente.
+
+Las reglas de puntuación deben estar configuradas en el servidor y no ser modificables por los usuarios comunes.
+
+## 5. NUEVOS RETOS CRISTIANOS Y MISIONEROS
+
+Agrega un catálogo de retos organizado por categorías, dificultad, duración y puntos.
+
+Incluye inicialmente los siguientes retos:
+
+**Servicio y misión**
+- Visitar a un adulto mayor y compartir tiempo con él.
+- Participar en una actividad de servicio comunitario.
+- Repartir volantes o invitaciones para una actividad de la iglesia.
+- Participar en una jornada evangelística.
+- Predicar o compartir un mensaje bíblico en una actividad autorizada.
+- Invitar a un amigo a una actividad juvenil o de la iglesia.
+- Orar con un amigo que desee participar voluntariamente.
+- Participar en una campaña de ayuda a personas necesitadas.
+- Realizar un acto de bondad de manera desinteresada.
+
+**Vida espiritual**
+- Dedicar tiempo a la oración personal.
+- Leer un capítulo de la Biblia y registrar una reflexión.
+- Memorizar un versículo bíblico.
+- Estudiar una lección bíblica.
+- Compartir una reflexión espiritual.
+- Cantar un himno o una alabanza.
+- Participar en un culto juvenil.
+- Organizar un momento de oración en grupo.
+
+**Talentos y comunidad**
+- Compartir un talento musical.
+- Participar en un grupo pequeño.
+- Crear un video con un mensaje bíblico.
+- Compartir una reflexión cristiana en redes sociales.
+- Participar en una actividad de campamento.
+- Preparar una dinámica cristiana para otros jóvenes.
+
+Asigna valores de puntos configurables para cada reto. No inventes una escala inalterable: permite que los administradores ajusten los valores según el esfuerzo, la duración, la dificultad y las políticas de la organización.
+
+Cada reto debe tener una ficha con instrucciones, requisitos de evidencia, puntuación, estado de cumplimiento, fecha de realización e historial.
+
+Incluye retos diarios, semanales, mensuales y especiales.
+
+Evita que los retos obliguen a publicar fotografías de otras personas sin permiso, a revelar información privada o a realizar actividades peligrosas. Ofrece métodos alternativos de evidencia cuando sea necesario.
+
+## 6. VISTAS REALES Y ESTADÍSTICAS AUTÉNTICAS
+
+Corrige el contador de vistas de publicaciones, videos y transmisiones en vivo.
+
+Las vistas deben proceder de eventos reales registrados por el servidor. Define qué constituye una vista válida y evita contar repetidamente las recargas, las visitas automatizadas y las interacciones fraudulentas.
+
+Distingue entre:
+
+- Impresiones: contenido mostrado en pantalla.
+- Visualizaciones: contenido visto según un criterio de reproducción definido.
+- Espectadores únicos: cuentas distintas que cumplen los criterios de visualización.
+- Reproducciones de video.
+- Tiempo real de reproducción.
+- Participantes y duración de transmisiones en vivo.
+
+No inventes vistas para llenar estadísticas. Si todavía no existen datos, muestra cero o un mensaje indicando que no hay estadísticas disponibles.
+
+Las vistas no deben generar puntos automáticamente, salvo que exista un reto específico, con condiciones claramente definidas y evidencia verificable.
+
+## 7. PANEL DE INICIO COMPLETO Y FUNCIONAL
+
+Rediseña el panel de inicio para que sea el centro de acceso a todas las funciones principales de la aplicación.
+
+Organiza la pantalla mediante tarjetas, accesos rápidos y secciones fáciles de utilizar desde teléfonos móviles.
+
+Incluye:
+
+- Perfil del usuario y sus puntos.
+- Retos disponibles y retos pendientes.
+- Botón para subir publicaciones.
+- Feed de publicaciones de la comunidad.
+- Estados activos de las últimas 24 horas.
+- Noticias adventistas verificadas.
+- Portal de libros juveniles cristianos.
+- Acceso al himnario adventista.
+- Juegos bíblicos.
+- Transmisiones en vivo.
+- Materiales, boletines y campamentos.
+- Clasificación de puntos.
+- Historial de recompensas.
+- Notificaciones.
+- Accesos a canales y creadores adventistas verificados.
+
+Todas las tarjetas deben abrir su funcionalidad real. No dejes botones decorativos ni enlaces sin destino.
+
+Personaliza el contenido según el estado de la sesión. Los visitantes deben ver únicamente las funciones públicas permitidas y las personas registradas deben tener acceso a las funciones autorizadas de su cuenta.
+
+## 8. NOTICIAS OFICIALES ADVENTISTAS ACTUALIZADAS
+
+Agrega una sección de noticias que obtenga contenido auténtico de fuentes oficiales de la Iglesia Adventista del Séptimo Día, con especial atención a las noticias sobre jóvenes, actividades juveniles, misión, congresos, campamentos y eventos.
+
+Prioriza las fuentes oficiales adventistas de Colombia y las fuentes oficiales internacionales cuando sean pertinentes.
+
+Requisitos:
+
+- Consultar fuentes oficiales verificables.
+- Utilizar RSS, API, integraciones autorizadas o mecanismos de consulta permitidos por cada sitio.
+- Actualizar las noticias automáticamente con una frecuencia configurable.
+- Mostrar el título original, la fecha de publicación, la fuente, una imagen autorizada cuando exista y un enlace al artículo original.
+- Permitir abrir la noticia completa en la página oficial.
+- Identificar claramente las noticias internacionales y nacionales.
+- Mostrar la fecha de la última actualización.
+- Evitar duplicados y retirar o marcar el contenido que ya no esté disponible.
+- Mostrar un mensaje si la fuente oficial no está disponible temporalmente.
+
+No generes noticias ficticias ni presentes artículos inventados por inteligencia artificial como noticias oficiales. No afirmes que una noticia está actualizada si no se ha comprobado su fecha y procedencia.
+
+Si la fuente no proporciona una API, implementa una alternativa permitida por sus condiciones de uso, como un feed oficial o enlaces verificados. Respeta los derechos de autor y no copies artículos completos sin autorización.
+
+## 9. PORTAL DE LIBROS JUVENILES CRISTIANOS
+
+Crea una biblioteca digital con una interfaz atractiva para los jóvenes.
+
+Organiza el catálogo por categorías:
+
+- Biblia y estudio bíblico.
+- Vida devocional.
+- Juventud y crecimiento espiritual.
+- Liderazgo cristiano.
+- Misión y evangelismo.
+- Familia y relaciones.
+- Historia de la Iglesia Adventista.
+- Libros de Elena G. de White.
+- Lecturas recomendadas para jóvenes.
+
+Incluye, cuando exista una versión legítima disponible, libros como *Mensajes para los jóvenes*, *El camino a Cristo*, *La educación* y otras obras apropiadas.
+
+Cada libro debe mostrar título, autor, portada autorizada, descripción, idioma, formato disponible y enlace de lectura.
+
+Permite leer libros dentro de la aplicación cuando los derechos y el formato lo permitan. Incorpora un lector cómodo, con ajuste de tamaño de letra, búsqueda de texto, marcadores y conservación del progreso de lectura.
+
+Prioriza las versiones digitales publicadas por fuentes oficiales o autorizadas. Comprueba la licencia de cada obra y no distribuyas archivos protegidos sin permiso.
+
+Si no se puede alojar un libro, muestra un enlace a la fuente legítima donde se pueda leer o descargar.
+
+## 10. HIMNARIO ADVENTISTA Y DESCARGA OFICIAL
+
+Agrega una sección específica para el himnario adventista, con el título y la edición correctamente identificados.
+
+Quiero que los usuarios puedan consultar información del himnario, acceder a los recursos que estén autorizados y encontrar el enlace oficial para adquirirlo, consultarlo o descargarlo, si existe una descarga legítima disponible.
+
+Verifica los enlaces en las páginas oficiales de la Iglesia Adventista o de la editorial correspondiente.
+
+No inventes botones de descarga ni enlaces que no existan. No alojes copias no autorizadas de himnarios, partituras, letras o grabaciones protegidas.
+
+Si el himnario no dispone de descarga gratuita oficial, indícalo claramente y ofrece el enlace oficial disponible.
+
+## 11. TRANSMISIONES EN VIVO
+
+Implementa una función real de transmisiones en vivo para los usuarios autorizados.
+
+Debe permitir:
+
+- Iniciar una transmisión desde un dispositivo compatible.
+- Solicitar los permisos de cámara y micrófono.
+- Mostrar transmisiones activas.
+- Permitir que otros usuarios entren como espectadores.
+- Mostrar el título, el nombre del creador, la duración y el número real de espectadores.
+- Finalizar la transmisión correctamente.
+- Guardar la fecha, la duración y las estadísticas de cada transmisión.
+- Moderar comentarios y reportar contenido inapropiado.
+- Configurar quién puede transmitir y quién puede ver las transmisiones.
+
+Utiliza una tecnología real de streaming compatible con la arquitectura de la aplicación. No simules una transmisión con un video grabado.
+
+Los puntos por transmisiones deben concederse solamente bajo reglas previamente configuradas. Por ejemplo, establecer una duración mínima, verificar que la transmisión se haya realizado realmente y evitar acumular puntos por retransmisiones o sesiones artificiales.
+
+No otorgues puntos únicamente por dejar la cámara encendida. Establece límites diarios y controles contra el fraude.
+
+Como la aplicación está dirigida a jóvenes, implementa controles de privacidad, moderación, consentimiento y protección de menores. No hagas públicas las ubicaciones ni los datos personales de los participantes.
+
+## 12. CANALES Y CREADORES ADVENTISTAS OFICIALES
+
+Agrega un directorio de canales y creadores adventistas en:
+
+- YouTube.
+- Instagram.
+- Facebook.
+- TikTok.
+
+Prioriza las cuentas institucionales oficiales, los ministerios juveniles adventistas y los creadores cuya afiliación adventista y autenticidad puedan verificarse.
+
+Cada ficha debe incluir:
+
+- Nombre del canal o creador.
+- Plataforma.
+- Fotografía o logotipo autorizado.
+- Breve descripción.
+- Enlace directo al perfil oficial.
+- Fecha de última verificación.
+- Categoría de contenido.
+
+Diferencia claramente las cuentas institucionales oficiales de los creadores independientes. No declares que una persona es un representante oficial de la Iglesia si no hay evidencia verificable.
+
+Comprueba los enlaces antes de publicarlos y permite a los administradores añadir, editar, verificar y retirar cuentas.
+
+No inventes nombres de creadores ni enlaces. Si una cuenta no puede verificarse, no la marques como oficial.
+
+## 13. ESTADOS CON EXPIRACIÓN DE 24 HORAS
+
+Implementa un sistema de estados temporales para fotos, videos y textos breves.
+
+Cada estado debe:
+
+- Tener una fecha real de creación y una fecha de expiración.
+- Permanecer disponible durante 24 horas desde su publicación.
+- Desaparecer automáticamente de la sección de estados cuando expire.
+- Permitir que el usuario publique un nuevo estado cuando lo desee, sin tener que esperar 24 horas para publicar otro.
+- Mostrar quién lo publicó y cuánto tiempo le queda.
+- Respetar la configuración de privacidad del usuario.
+- Permitir eliminar un estado antes de que expire.
+
+La expiración debe controlarse en el servidor y no depender únicamente del reloj del dispositivo.
+
+Los estados vencidos no deben seguir apareciendo en los feeds ni en las consultas normales. Programa la eliminación o limpieza de los archivos vencidos conforme a las políticas de retención, seguridad y respaldo de la aplicación.
+
+## 14. MÁS JUEGOS CRISTIANOS Y BÍBLICOS
+
+Amplía el sistema de juegos existente y conserva los juegos que ya funcionan.
+
+Agrega modalidades como:
+
+- Trivia bíblica.
+- ¿Quién soy? Personajes bíblicos.
+- Completa el versículo.
+- Ordena los acontecimientos bíblicos.
+- Verdadero o falso.
+- Adivina el personaje.
+- Preguntas sobre historia adventista.
+- Retos de interpretación de parábolas.
+- Situaciones prácticas sobre valores cristianos.
+- Preguntas sobre libros y personajes de la Biblia.
+- Desafíos bíblicos individuales y por equipos.
+- Competencias amistosas entre grupos juveniles.
+
+Cada juego debe tener niveles de dificultad:
+
+**Fácil:** preguntas básicas sobre personajes, acontecimientos y conceptos bíblicos.
+
+**Intermedio:** relaciones entre pasajes, comprensión de historias y aplicación de enseñanzas.
+
+**Difícil:** interpretación de pasajes, análisis del contexto, comparación de relatos y razonamiento bíblico.
+
+Varía los tipos de preguntas, las respuestas posibles, las explicaciones, el orden y la forma de presentación.
+
+Construye un banco amplio de preguntas organizado por tema, libro bíblico, dificultad y modalidad. Utiliza preguntas originales y revisadas, con respuestas correctas y referencias bíblicas verificables.
+
+No repitas constantemente las mismas preguntas. Permite incorporar nuevos paquetes de preguntas desde el panel administrativo sin modificar el código de la aplicación.
+
+Al finalizar una partida, muestra la puntuación real, las respuestas correctas, las explicaciones y las referencias bíblicas.
+
+Si los juegos otorgan puntos, valida los resultados en el servidor y evita que las respuestas se puedan manipular desde el navegador.
+
+## 15. MATERIALES, CAMPAMENTOS Y BOLETINES OFICIALES
+
+Dentro del panel de materiales, crea una sección denominada “Campamentos y eventos adventistas”.
+
+Debe mostrar información de campamentos, congresos juveniles, retiros espirituales, encuentros y actividades oficiales.
+
+Cada evento debe incluir, cuando la fuente lo publique:
+
+- Nombre oficial.
+- Descripción.
+- Fecha de inicio y finalización.
+- Lugar.
+- Organización responsable.
+- Boletín o documento informativo.
+- Requisitos de inscripción.
+- Fechas límite.
+- Costos publicados oficialmente, si existen.
+- Enlace oficial de inscripción.
+- Fuente original.
+- Fecha de última verificación.
+
+Prioriza la información oficial de la Iglesia Adventista del Séptimo Día en Colombia, sus asociaciones, uniones y departamentos juveniles correspondientes.
+
+Actualiza los eventos desde fuentes oficiales mediante integraciones autorizadas, feeds o enlaces verificados. Conserva el enlace al boletín original y permite visualizar o descargar los documentos cuando la fuente lo autorice.
+
+No inventes campamentos, fechas, precios, lugares, inscripciones ni boletines. Si no se encuentra información actualizada, muestra un mensaje claro y conserva el acceso a la fuente oficial.
+
+Incluye filtros por región, fecha, tipo de evento y organización responsable.
+
+## 16. NOTIFICACIONES Y ACTIVIDAD
+
+Implementa un centro de notificaciones que informe sobre:
+
+- Nuevos retos.
+- Retos aprobados o rechazados.
+- Puntos recibidos.
+- Comentarios y reacciones.
+- Nuevas publicaciones de usuarios seguidos, si existe esa función.
+- Noticias importantes.
+- Próximos campamentos y eventos.
+- Transmisiones en vivo.
+- Estados y actividades relevantes.
+
+Las notificaciones deben tener una causa real, una fecha y un destino válido. Evita generar notificaciones duplicadas.
+
+Permite configurar las notificaciones y respetar las preferencias de cada usuario.
+
+## 17. BASE DE DATOS Y ARQUITECTURA
+
+Inspecciona la tecnología que ya utiliza la aplicación y adapta las mejoras a su arquitectura actual.
+
+Define o adapta las entidades necesarias para:
+
+- Usuarios y perfiles.
+- Publicaciones y archivos multimedia.
+- Comentarios y reacciones.
+- Estados temporales.
+- Retos y evidencias.
+- Reglas de puntuación.
+- Transacciones de puntos.
+- Vistas y estadísticas.
+- Transmisiones en vivo.
+- Preguntas y partidas de juegos.
+- Libros y recursos digitales.
+- Noticias y fuentes oficiales.
+- Canales y creadores verificados.
+- Campamentos, eventos y boletines.
+- Notificaciones.
+- Moderación y registros de auditoría.
+
+Establece relaciones coherentes, índices, reglas de acceso, validaciones y políticas de almacenamiento.
+
+No crees una segunda base de datos innecesaria si la aplicación ya tiene una que puede ampliarse correctamente.
+
+Si necesitas cambiar la estructura de la base de datos, crea migraciones seguras, conserva los datos existentes y verifica la compatibilidad con las versiones actuales de la aplicación.
+
+## 18. SEGURIDAD Y PROTECCIÓN DE LOS JÓVENES
+
+Implementa medidas de seguridad apropiadas para una comunidad juvenil:
+
+- Autenticación real y recuperación de cuenta.
+- Permisos basados en roles.
+- Protección de datos personales.
+- Validación de archivos y solicitudes.
+- Restricciones para impedir que un usuario modifique datos de otra cuenta.
+- Moderación de publicaciones y transmisiones.
+- Herramientas para reportar y bloquear contenido o cuentas.
+- Controles contra spam, fraude y abuso.
+- Configuración de privacidad.
+- Protección reforzada para menores y mecanismos de consentimiento cuando correspondan.
+- Políticas claras de retención y eliminación de datos.
+
+No expongas contraseñas, claves secretas, tokens ni credenciales en el código del cliente. Utiliza variables de entorno y mecanismos seguros para las integraciones externas.
+
+## 19. PANEL ADMINISTRATIVO
+
+Crea o mejora un panel de administración protegido por permisos.
+
+Debe permitir:
+
+- Administrar retos y asignar puntuaciones.
+- Revisar evidencias pendientes.
+- Consultar el historial de puntos.
+- Gestionar preguntas y categorías de juegos.
+- Verificar fuentes de noticias.
+- Administrar libros y enlaces oficiales.
+- Verificar canales y creadores adventistas.
+- Administrar materiales y eventos.
+- Moderar publicaciones, comentarios y transmisiones.
+- Consultar estadísticas reales.
+- Revisar reportes de usuarios.
+- Configurar reglas de publicación y privacidad.
+
+Registra las acciones administrativas importantes para poder identificar cambios y corregir errores.
+
+## 20. PRUEBAS OBLIGATORIAS
+
+Antes de declarar terminada cada función, realiza pruebas reales.
+
+Verifica que:
+
+1. Una publicación de imagen se guarde y aparezca en el perfil.
+2. Una publicación de video se guarde, se reproduzca y pueda consultarse desde otra sesión autorizada.
+3. Las publicaciones sigan disponibles después de cerrar sesión.
+4. Un usuario nuevo no aparezca hasta completar el registro.
+5. No existan avatares ni cuentas ficticias en producción.
+6. Los puntos no puedan manipularse desde el cliente.
+7. Una evidencia válida genere una recompensa una sola vez.
+8. Una evidencia pendiente de revisión no genere puntos prematuramente.
+9. Las vistas se registren con criterios reales.
+10. Las noticias muestren fuentes auténticas y enlaces funcionales.
+11. Los libros y el himnario dirijan a recursos legítimos.
+12. Las transmisiones en vivo funcionen realmente.
+13. Los estados desaparezcan después de 24 horas.
+14. Los juegos tengan preguntas variadas en los tres niveles.
+15. Los boletines y eventos se abran correctamente.
+16. El panel de inicio muestre las funciones disponibles sin enlaces rotos.
+17. Los permisos impidan acceder a información privada de otras personas.
+18. La aplicación funcione correctamente en móviles y computadoras.
+
+Incluye pruebas de integración, pruebas de permisos y pruebas de errores de red. No elimines datos de producción para ejecutar pruebas.
+
+## 21. FORMA DE TRABAJO Y ENTREGA
+
+Trabaja en este orden:
+
+**Fase 1:** inspeccionar la aplicación existente y entregar un diagnóstico de las funciones que fallan, las causas encontradas y las dependencias necesarias.
+
+**Fase 2:** corregir el registro, los perfiles, las publicaciones multimedia, el almacenamiento y las vistas reales.
+
+**Fase 3:** implementar los retos, la presentación de evidencias, la validación y el sistema seguro de puntos.
+
+**Fase 4:** construir las noticias oficiales, la biblioteca, el himnario y el directorio de canales verificados.
+
+**Fase 5:** implementar los estados de 24 horas, las transmisiones en vivo, los juegos ampliados y el portal de campamentos.
+
+**Fase 6:** completar el panel de inicio, las notificaciones, la administración y las pruebas finales.
+
+Al terminar cada fase, informa:
+
+- Qué funcionalidades se corrigieron o agregaron.
+- Qué archivos y componentes se modificaron.
+- Qué cambios se realizaron en la base de datos.
+- Qué servicios externos se necesitan.
+- Qué pruebas se ejecutaron y cuáles fueron sus resultados.
+- Qué configuración o credenciales debe proporcionar el propietario.
+- Qué funciones están completas y cuáles siguen pendientes.
+
+No afirmes que una función está terminada si solamente creaste su interfaz. Si requiere una API, un servicio de almacenamiento, un proveedor de streaming, permisos especiales o credenciales, identifícalo y explica cómo configurarlo.
+
+**RESULTADO FINAL ESPERADO:** una aplicación juvenil cristiana adventista real, segura, dinámica y funcional, donde los jóvenes puedan publicar contenido, participar en retos, obtener puntos legítimos, leer, jugar, compartir su fe, consultar noticias y materiales oficiales, y participar en actividades de la comunidad desde un único panel de inicio.

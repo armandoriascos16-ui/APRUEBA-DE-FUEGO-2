@@ -1,0 +1,343 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'harmonymusis@gmail.com' ||
+        request.auth.token.email == 'harmonyestampadosr@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 1. Users
+    match /users/{userId} {
+      allow read: if true;
+
+      // Only the authenticated account owner or admin can create their profile.
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidId(userId) &&
+        (
+          !('emailVerified' in request.resource.data) ||
+          request.resource.data.emailVerified != true ||
+          request.auth.token.email_verified == true ||
+          isAdmin()
+        );
+
+      // Account owner or admin can update full profile. Other signed-in users can update followerIds (follow/unfollow).
+      allow update: if (
+        isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidId(userId) &&
+        (
+          !('emailVerified' in request.resource.data) ||
+          request.resource.data.emailVerified != true ||
+          request.auth.token.email_verified == true ||
+          isAdmin()
+        )
+      ) || (
+        isSignedIn() && isValidId(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerIds'])
+      );
+
+      allow delete: if isAdmin();
+
+      // Subcolección de insignias y recompensas del usuario
+      match /badges/{badgeId} {
+        allow read: if isOwner(userId) || isAdmin() || (
+          get(/databases/$(database)/documents/users/$(userId)).data.emailVerified == true
+        );
+        allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidId(badgeId);
+        allow delete: if isAdmin();
+      }
+    }
+
+    // 2. Posts
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isValidId(postId) && (
+        (isAdmin() && request.resource.data.isOfficial == true) ||
+        (isSignedIn() && request.resource.data.isOfficial == false)
+      );
+      allow update: if isSignedIn() && isValidId(postId);
+      allow delete: if isSignedIn();
+
+      // Subcolección 'comments' dentro de cada publicación
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create, update: if isSignedIn() && isValidId(commentId);
+        allow delete: if isSignedIn();
+
+        // Subcolección de respuestas anidadas
+        match /replies/{replyId} {
+          allow read: if true;
+          allow create, update: if isSignedIn() && isValidId(replyId);
+          allow delete: if isSignedIn();
+        }
+      }
+    }
+
+    // 3. Challenges & Submissions
+    match /challenges/{challengeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /submissions/{submissionId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(submissionId);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 4. Comments (Colección general)
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(commentId);
+      allow delete: if isSignedIn();
+    }
+
+    // 5. Reactions (Colección general)
+    match /reactions/{reactionId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(reactionId);
+      allow delete: if isSignedIn();
+    }
+
+    // 6. Stories & Subcollections (Comments, Reactions, Views)
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create, update: if isValidId(storyId);
+      allow delete: if isSignedIn();
+
+      // Subcolección de comentarios en historias: solo autenticados, solo autor modifica su comentario
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(commentId) && request.resource.data.authorId == request.auth.uid;
+        allow update: if isSignedIn() && isValidId(commentId) && (
+          request.auth.uid == resource.data.authorId || 
+          isAdmin() || 
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedUserIds'])
+        );
+        allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+
+        match /replies/{replyId} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() && isValidId(replyId) && request.resource.data.authorId == request.auth.uid;
+          allow update: if isSignedIn() && isValidId(replyId) && (
+            request.auth.uid == resource.data.authorId || 
+            isAdmin() || 
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedUserIds'])
+          );
+          allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+        }
+      }
+
+      // Subcolección de reacciones en historias: solo autenticados, solo usuario modifica su reacción
+      match /reactions/{userId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+        allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      }
+
+      // Subcolección de visualizaciones reales (1 por usuario autenticado)
+      match /views/{viewerId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(viewerId) && request.auth.uid == viewerId;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // 6a. Colección raíz: story_comments
+    match /story_comments/{commentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(commentId) && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(commentId) && (
+        request.auth.uid == resource.data.authorId || 
+        isAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedUserIds'])
+      );
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+    }
+
+    // 6b. Colección raíz: story_reactions
+    match /story_reactions/{reactionId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(reactionId) && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
+    // 6c. Colección raíz: story_views
+    match /story_views/{viewId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(viewId) && request.resource.data.viewerId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // 7. Messages
+    match /messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(messageId);
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.senderId || isAdmin());
+    }
+
+    // 8. Groups
+    match /groups/{groupId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(groupId);
+      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.leaderId || isAdmin());
+    }
+
+    // 9. Events
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 10. Badges
+    match /badges/{badgeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 11. Achievements
+    match /achievements/{achievementId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(achievementId);
+      allow update, delete: if isAdmin();
+    }
+
+    // 12. Notifications
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isSignedIn() && isValidId(notificationId);
+      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
+    // 13. Reports
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && isValidId(reportId);
+      allow update, delete: if isAdmin();
+    }
+
+    // 14. Official Sources
+    match /official_sources/{sourceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 15. News
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 16. Channels
+    match /channels/{channelId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 17. Games
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 18. Game Scores
+    match /game_scores/{scoreId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(scoreId);
+      allow delete: if isAdmin();
+    }
+
+    // 19. Prayer Requests
+    match /prayers/{prayerId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && isValidId(prayerId);
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+    }
+
+    // 20. Testimonials
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && isValidId(testimonialId);
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
+    }
+
+    // 21. Point Transactions (Auditable Ledger)
+    match /point_transactions/{txId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(txId);
+      allow update, delete: if isAdmin();
+    }
+
+    // 22. Invitations
+    match /invitations/{inviteId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(inviteId);
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // 23. Live Streams & Live Chat (Señalización WebRTC en tiempo real)
+    match /live_streams/{streamId} {
+      allow read: if true;
+      allow create, update: if isValidId(streamId);
+      allow delete: if (isSignedIn() && request.auth.uid == resource.data.hostId) || isAdmin();
+    }
+
+    // 24. Ideas JA & Fondos (Biblioteca Colaborativa de Ideas y Planes)
+    match /ideas_ja/{ideaId} {
+      allow read: if (resource.data.status == 'approved') || (isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin()));
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && isValidId(ideaId);
+      allow update: if isSignedIn() && isValidId(ideaId) && (
+        (resource.data.authorId == request.auth.uid && request.resource.data.authorId == request.auth.uid && (request.resource.data.status == 'pending' || request.resource.data.status == 'draft' || resource.data.status == 'changes_requested')) ||
+        isAdmin() ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoritesCount', 'ratingsCount', 'ratingAverage', 'commentsCount', 'viewsCount']))
+      );
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // 25. Ideas Comments
+    match /ideas_comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && isValidId(commentId);
+      allow update, delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // 26. Ideas Ratings
+    match /ideas_ratings/{ratingId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid && isValidId(ratingId);
+    }
+
+    // 27. Ideas Favorites
+    match /ideas_favorites/{favId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid && isValidId(favId);
+    }
+
+    // Test connection doc
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
