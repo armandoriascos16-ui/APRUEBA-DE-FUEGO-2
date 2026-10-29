@@ -96,6 +96,23 @@ export interface User {
   followerIds: string[];
   savedPostIds: string[];
   joinedEventIds: string[];
+
+  // Persistence & Access Audit
+  createdAt?: string;
+  lastActive?: string;
+  isProfileComplete?: boolean;
+  loginCount?: number;
+}
+
+export interface AuthEvent {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  eventType: 'login' | 'register';
+  timestamp: string;
+  providerId?: string;
+  userAgent?: string;
 }
 
 export interface SavedAccount {
@@ -146,6 +163,8 @@ export interface Post {
   content: string;
   imageUrl?: string;
   videoUrl?: string;
+  videoPoster?: string;
+  videoDuration?: number;
   mediaType?: 'image' | 'video';
   bibleVerse?: string;
   tags: string[];

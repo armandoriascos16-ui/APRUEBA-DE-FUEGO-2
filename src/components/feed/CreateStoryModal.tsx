@@ -6,6 +6,10 @@ import {
   uploadMediaFile 
 } from '../../utils/mediaUtils';
 import { 
+  validateVideoFile, 
+  validateImageFile 
+} from '../../services/mediaValidationService';
+import { 
   X, 
   Sparkles, 
   Image as ImageIcon, 
@@ -21,7 +25,8 @@ import {
   Pause,
   Music,
   Mic,
-  Upload
+  Upload,
+  AlertTriangle
 } from 'lucide-react';
 import { AudioRecorderModal } from '../audioStories/AudioRecorderModal';
 import { UserAvatar } from '../common/UserAvatar';
@@ -125,6 +130,14 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ onClose }) =
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validación previa
+    const validation = await validateImageFile(file, 'story');
+    if (!validation.isValid) {
+      setSmartFeedback(validation.error || 'La foto no cumple los requisitos para historias.');
+      if (photoInputRef.current) photoInputRef.current.value = '';
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const result = await compressImageFromGallery(file, 800, 1200, 0.72);
@@ -157,29 +170,27 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ onClose }) =
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validación previa para historias (límite 60s, tamaño, formato)
+    const validation = await validateVideoFile(file, 'story');
+    if (!validation.isValid) {
+      setSmartFeedback(validation.error || 'El video no cumple los requisitos para historias.');
+      if (videoInputRef.current) videoInputRef.current.value = '';
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const result = await processVideoFromGallery(file);
+      const result = await processVideoFromGallery(file, 'story');
       setMediaUrl(result.url);
       setMediaType('video');
       setMediaSource('gallery_video');
       setMediaFileName(result.name);
-      setMediaMeta(`${result.sizeMb} MB ${result.duration ? `· ${result.duration}s` : ''}`);
+      const codecTag = validation.isH264AacMp4 ? ' · H.264/AAC' : ' · MP4';
+      setMediaMeta(`${result.sizeMb} MB ${result.duration ? `· ${result.duration}s` : ''}${codecTag}`);
       setIsVideoPlaying(true);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Fallback al leer video:', err);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setMediaUrl(event.target.result as string);
-          setMediaType('video');
-          setMediaSource('gallery_video');
-          setMediaFileName(file.name);
-          setMediaMeta(`${(file.size / (1024 * 1024)).toFixed(1)} MB`);
-          setIsVideoPlaying(true);
-        }
-      };
-      reader.readAsDataURL(file);
+      setSmartFeedback(err.message || 'No se pudo procesar el video.');
     } finally {
       setIsProcessing(false);
     }
@@ -256,7 +267,7 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({ onClose }) =
       <input
         type="file"
         ref={videoInputRef}
-        accept="video/mp4,video/webm,video/quicktime,video/*"
+        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska,video/3gpp,video/*"
         onChange={handleVideoFromGallery}
         className="hidden"
       />

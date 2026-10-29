@@ -2,8 +2,26 @@
  * Utilidades para manejo, compresión y optimización de fotos y videos
  * desde la galería del dispositivo para el Feed y los Estados (Stories).
  * Proporciona almacenamiento persistente en disco del servidor (/uploads/)
- * y caché durable en IndexedDB para disponibilidad permanente entre sesiones.
+ * con transcodificación universal (H.264/AAC), extracción de poster y
+ * caché durable en IndexedDB para disponibilidad permanente entre sesiones.
  */
+
+import { 
+  validateVideoFile, 
+  validateImageFile, 
+  validateAudioFile, 
+  validateMediaFile, 
+  MediaValidationResult, 
+  MediaTargetContext 
+} from '../services/mediaValidationService';
+
+export { 
+  validateVideoFile, 
+  validateImageFile, 
+  validateAudioFile, 
+  validateMediaFile 
+};
+export type { MediaValidationResult, MediaTargetContext };
 
 export interface ProcessedImage {
   dataUrl: string;
@@ -21,6 +39,23 @@ export interface ProcessedVideo {
   duration?: number;
   width?: number;
   height?: number;
+  posterUrl?: string;
+  wasConverted?: boolean;
+  codec?: string;
+  validation?: MediaValidationResult;
+}
+
+export interface UploadMediaResult {
+  url: string;
+  filename: string;
+  sizeMb: number;
+  posterUrl?: string;
+  wasConverted?: boolean;
+  duration?: number;
+  width?: number;
+  height?: number;
+  codec?: string;
+  mimeType?: string;
 }
 
 // ============================================================================
@@ -80,7 +115,7 @@ export async function getMediaBlobFromLocalDb(id: string): Promise<Blob | null> 
 }
 
 // ============================================================================
-// SERVER MEDIA UPLOAD (Guarda permanentemente en /public/uploads/ en el servidor)
+// SERVER MEDIA UPLOAD & SAFE DELETION
 // ============================================================================
 
 /**
@@ -97,13 +132,13 @@ export function readFileAsDataUrl(file: File | Blob): Promise<string> {
 
 /**
  * Sube un archivo de video o foto al servidor Express (/api/media/upload)
- * Devolviendo una URL persistente /uploads/... que se conserva entre reinicios,
- * recargas, cambios de pestaña y cambios de cuentas.
+ * El servidor transcodifica videos incompatibles a MP4 (H.264/AAC + faststart),
+ * genera un poster thumbnail y devuelve la URL permanente en /uploads/.
  */
 export async function uploadMediaFile(
   file: File | Blob, 
   customFilename?: string
-): Promise<{ url: string; filename: string; sizeMb: number }> {
+): Promise<UploadMediaResult> {
   const filename = customFilename || (file instanceof File ? file.name : `media_${Date.now()}`);
   const dataUrl = await readFileAsDataUrl(file);
 
@@ -129,7 +164,14 @@ export async function uploadMediaFile(
         return {
           url: data.url,
           filename: data.filename || filename,
-          sizeMb: data.sizeMb || Number((file.size / (1024 * 1024)).toFixed(2))
+          sizeMb: data.sizeMb || Number((file.size / (1024 * 1024)).toFixed(2)),
+          posterUrl: data.posterUrl,
+          wasConverted: data.wasConverted,
+          duration: data.duration,
+          width: data.width,
+          height: data.height,
+          codec: data.codec,
+          mimeType: data.mimeType
         };
       }
     }
@@ -137,7 +179,7 @@ export async function uploadMediaFile(
     console.warn('Aviso: Falló la subida directa al servidor, aplicando respaldo local persistente:', err);
   }
 
-  // Fallback: guardar en IndexedDB y usar dataUrl o ObjectURL durable
+  // Fallback: guardar en IndexedDB y usar objectUrl
   const fallbackId = `local_media_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   await saveMediaBlobToLocalDb(fallbackId, file, { filename });
   const objectUrl = URL.createObjectURL(file);
@@ -147,6 +189,24 @@ export async function uploadMediaFile(
     filename,
     sizeMb: Number((file.size / (1024 * 1024)).toFixed(2))
   };
+}
+
+/**
+ * Elimina un archivo multimedia de /uploads/ en el servidor de forma segura
+ */
+export async function deleteMediaFileFromServer(url: string): Promise<boolean> {
+  if (!url || !url.startsWith('/uploads/')) return false;
+  try {
+    const res = await fetch('/api/media/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('Advertencia al eliminar archivo del servidor:', err);
+    return false;
+  }
 }
 
 /**
@@ -225,56 +285,34 @@ export async function compressImageFromGallery(
 
 /**
  * Procesa un archivo de video seleccionado desde la galería.
- * Extrae metadatos de duración y resolución, y lo sube de forma persistente
- * a /uploads/ en el servidor para que continúe disponible permanentemente.
+ * Realiza validación estricta de MIME, tamaño y duración con el servicio especializado,
+ * extrae metadatos y lo sube de forma persistente a /uploads/ en el servidor
+ * con transcodificación universal (H.264/AAC + faststart).
  */
-export async function processVideoFromGallery(file: File): Promise<ProcessedVideo> {
-  // 1. Obtener duración y dimensiones de forma temporal
-  const tempObjectUrl = URL.createObjectURL(file);
-  let duration = 0;
-  let width = 0;
-  let height = 0;
-
-  try {
-    await new Promise<void>((resolve) => {
-      const tempVideo = document.createElement('video');
-      tempVideo.preload = 'metadata';
-      tempVideo.muted = true;
-      tempVideo.playsInline = true;
-
-      const timeout = setTimeout(() => {
-        resolve();
-      }, 2000);
-
-      tempVideo.onloadedmetadata = () => {
-        clearTimeout(timeout);
-        duration = Math.round(tempVideo.duration) || 0;
-        width = tempVideo.videoWidth || 0;
-        height = tempVideo.videoHeight || 0;
-        resolve();
-      };
-
-      tempVideo.onerror = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      tempVideo.src = tempObjectUrl;
-    });
-  } finally {
-    URL.revokeObjectURL(tempObjectUrl);
+export async function processVideoFromGallery(
+  file: File, 
+  context: MediaTargetContext = 'feed_post'
+): Promise<ProcessedVideo> {
+  // 1. Validar el archivo con el servicio de validación multimedia
+  const validation = await validateVideoFile(file, context);
+  if (!validation.isValid) {
+    throw new Error(validation.error || 'El archivo de video no cumple con los requisitos del reproductor.');
   }
 
-  // 2. Subir persistentemente al servidor
+  // 2. Subir persistentemente al servidor y transcodificar si es necesario
   const uploadRes = await uploadMediaFile(file);
 
   return {
     url: uploadRes.url,
     name: uploadRes.filename,
     sizeMb: uploadRes.sizeMb,
-    duration,
-    width,
-    height
+    duration: uploadRes.duration || validation.duration,
+    width: uploadRes.width || validation.width,
+    height: uploadRes.height || validation.height,
+    posterUrl: uploadRes.posterUrl,
+    wasConverted: uploadRes.wasConverted,
+    codec: uploadRes.codec,
+    validation
   };
 }
 
@@ -297,6 +335,11 @@ export function isVideoSource(url?: string, explicitType?: 'image' | 'video'): b
     cleanUrl.endsWith('.mov') ||
     cleanUrl.endsWith('.m4v') ||
     cleanUrl.endsWith('.ogg') ||
+    cleanUrl.endsWith('.avi') ||
+    cleanUrl.endsWith('.mkv') ||
+    cleanUrl.endsWith('.flv') ||
+    cleanUrl.endsWith('.wmv') ||
+    cleanUrl.endsWith('.3gp') ||
     cleanUrl.includes('video')
   );
 }

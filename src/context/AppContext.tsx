@@ -72,6 +72,7 @@ import {
 } from '../data/seedData';
 import confetti from 'canvas-confetti';
 import { verifyChallengeEvidence, VerificationResult } from '../services/challengeVerificationService';
+import { deleteMediaFileFromServer } from '../utils/mediaUtils';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
@@ -1187,7 +1188,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       content: newPostData.content || '',
       imageUrl: newPostData.imageUrl || '',
       videoUrl: newPostData.videoUrl || '',
-      mediaType: newPostData.mediaType || (newPostData.imageUrl ? 'image' : newPostData.videoUrl ? 'video' : 'image'),
+      videoPoster: newPostData.videoPoster || '',
+      videoDuration: newPostData.videoDuration,
+      mediaType: newPostData.mediaType || (newPostData.videoUrl ? 'video' : newPostData.imageUrl ? 'image' : 'image'),
       bibleVerse: newPostData.bibleVerse?.trim() || '',
       tags: newPostData.tags || ['AbaPadre', 'JuventudAdventista'],
       viewsCount: 1,
@@ -2532,9 +2535,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
-  const deletePost = (postId: string) => {
-    setPosts(prev => prev.filter(p => p.id !== postId));
-    deletePostInFirestore(postId).catch(e => console.warn('Firestore delete post fallback:', e));
+  const deletePost = async (postId: string) => {
+    const postToDelete = posts.find(p => p.id === postId);
+    const remaining = posts.filter(p => p.id !== postId);
+    setPosts(remaining);
+    safeLocalStorageSet('apdf_posts', JSON.stringify(remaining));
+
+    if (selectedPostForDetail?.id === postId) {
+      setSelectedPostForDetail(null);
+    }
+
+    try {
+      await deletePostInFirestore(postId);
+    } catch (e) {
+      console.warn('Firestore delete post fallback:', e);
+    }
+
+    // Clean up uploaded media file if not shared by other posts or stories
+    if (postToDelete) {
+      const mediaUrls = [postToDelete.videoUrl, postToDelete.imageUrl, postToDelete.videoPoster].filter(Boolean) as string[];
+      for (const mUrl of mediaUrls) {
+        if (mUrl && mUrl.includes('/uploads/')) {
+          const isUsedByOtherPost = remaining.some(p => p.videoUrl === mUrl || p.imageUrl === mUrl || p.videoPoster === mUrl);
+          const isUsedByStory = stories.some(s => s.mediaUrl === mUrl);
+          if (!isUsedByOtherPost && !isUsedByStory) {
+            deleteMediaFileFromServer(mUrl).catch(e => console.warn('Could not clean up file on server:', e));
+          }
+        }
+      }
+    }
   };
 
   const deleteChallenge = (challengeId: string) => {

@@ -28,6 +28,132 @@ app.use('/uploads', express.static(UPLOADS_DIR, {
     res.setHeader('Accept-Ranges', 'bytes');
   }
 }));
+// Explicit 404 for missing media files so they don't fall through to SPA HTML
+app.use('/uploads', (_req, res) => {
+  res.status(404).send('Archivo no encontrado');
+});
+
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const execFileAsync = promisify(execFile);
+
+// Helper function to inspect, transcode and optimize videos to universal MP4 (H.264 / AAC + faststart)
+async function processUploadedVideo(rawFilePath: string, originalFilename: string) {
+  let videoCodec = 'unknown';
+  let audioCodec = 'unknown';
+  let duration = 0;
+  let width = 0;
+  let height = 0;
+
+  try {
+    const { stdout } = await execFileAsync('ffprobe', [
+      '-v', 'quiet',
+      '-print_format', 'json',
+      '-show_format',
+      '-show_streams',
+      rawFilePath
+    ]);
+    const probe = JSON.parse(stdout);
+    const vStream = probe.streams?.find((s: any) => s.codec_type === 'video');
+    const aStream = probe.streams?.find((s: any) => s.codec_type === 'audio');
+    videoCodec = vStream?.codec_name || 'unknown';
+    audioCodec = aStream?.codec_name || 'none';
+    width = vStream?.width || 0;
+    height = vStream?.height || 0;
+    duration = Math.round(Number(probe.format?.duration || 0));
+  } catch (probeErr) {
+    console.warn('ffprobe warning:', probeErr);
+  }
+
+  const isAlreadyH264 = videoCodec === 'h264';
+  const isAudioWebSafe = ['aac', 'mp3', 'opus', 'none', 'unknown'].includes(audioCodec);
+  const isMp4Ext = rawFilePath.toLowerCase().endsWith('.mp4');
+
+  const baseId = path.basename(rawFilePath, path.extname(rawFilePath));
+  const convertedFileName = `${baseId}_web.mp4`;
+  const convertedFilePath = path.join(UPLOADS_DIR, convertedFileName);
+  const posterFileName = `poster_${baseId}.jpg`;
+  const posterFilePath = path.join(UPLOADS_DIR, posterFileName);
+
+  let finalUrl = `/uploads/${path.basename(rawFilePath)}`;
+  let finalFileName = path.basename(rawFilePath);
+  let wasConverted = false;
+
+  if (isAlreadyH264 && isAudioWebSafe && isMp4Ext) {
+    // Already in web-native H.264/AAC. Optimize by moving moov atom to front for progressive seeking
+    try {
+      await execFileAsync('ffmpeg', [
+        '-y',
+        '-i', rawFilePath,
+        '-c', 'copy',
+        '-movflags', '+faststart',
+        convertedFilePath
+      ]);
+      await fs.promises.unlink(rawFilePath).catch(() => {});
+      finalUrl = `/uploads/${convertedFileName}`;
+      finalFileName = convertedFileName;
+      wasConverted = false;
+    } catch {
+      // Keep raw if faststart copy fails
+    }
+  } else {
+    // Transcode incompatible codecs (HEVC, ProRes, MPEG4, VP9, AVI, MKV, WMV, AC3 audio) to universal H.264 + AAC
+    console.log(`[FFmpeg] Convirtiendo video (${videoCodec}/${audioCodec}) a MP4 H.264/AAC universal...`);
+    try {
+      await execFileAsync('ffmpeg', [
+        '-y',
+        '-i', rawFilePath,
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '23',
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        '-max_muxing_queue_size', '1024',
+        convertedFilePath
+      ]);
+      await fs.promises.unlink(rawFilePath).catch(() => {});
+      finalUrl = `/uploads/${convertedFileName}`;
+      finalFileName = convertedFileName;
+      wasConverted = true;
+    } catch (transcodeErr) {
+      console.error('Error during ffmpeg transcode fallback:', transcodeErr);
+    }
+  }
+
+  // Generate poster thumbnail frame for immediate preview
+  let posterUrl: string | undefined = undefined;
+  try {
+    const finalPhysicalPath = path.join(UPLOADS_DIR, finalFileName);
+    const ssTime = duration > 1 ? '00:00:00.5' : '00:00:00.1';
+    await execFileAsync('ffmpeg', [
+      '-y',
+      '-ss', ssTime,
+      '-i', finalPhysicalPath,
+      '-vframes', '1',
+      '-q:v', '2',
+      posterFilePath
+    ]);
+    if (fs.existsSync(posterFilePath)) {
+      posterUrl = `/uploads/${posterFileName}`;
+    }
+  } catch (posterErr) {
+    console.warn('Poster thumbnail generation skipped:', posterErr);
+  }
+
+  return {
+    finalUrl,
+    finalFileName,
+    wasConverted,
+    posterUrl,
+    videoCodec: wasConverted ? 'h264' : videoCodec,
+    audioCodec: wasConverted ? 'aac' : audioCodec,
+    duration,
+    width,
+    height
+  };
+}
 
 // Endpoint for permanent video and image uploads from device gallery
 app.post('/api/media/upload', async (req, res) => {
@@ -49,6 +175,14 @@ app.post('/api/media/upload', async (req, res) => {
       buffer = Buffer.from(dataUrl, 'base64');
     }
 
+    // Server-side validation: Max 150 MB hard limit
+    const MAX_UPLOAD_BYTES = 150 * 1024 * 1024;
+    if (buffer.length > MAX_UPLOAD_BYTES) {
+      return res.status(413).json({
+        error: `El archivo supera el tamaño máximo permitido de 150 MB (${(buffer.length / (1024 * 1024)).toFixed(1)} MB recibidos).`
+      });
+    }
+
     // Determine extension
     let ext = 'bin';
     if (filename && filename.includes('.')) {
@@ -59,12 +193,24 @@ app.post('/api/media/upload', async (req, res) => {
       ext = 'webm';
     } else if (detectedMime.includes('quicktime') || detectedMime.includes('mov')) {
       ext = 'mov';
+    } else if (detectedMime.includes('x-msvideo') || detectedMime.includes('avi')) {
+      ext = 'avi';
+    } else if (detectedMime.includes('x-matroska') || detectedMime.includes('mkv')) {
+      ext = 'mkv';
     } else if (detectedMime.includes('jpeg') || detectedMime.includes('jpg')) {
       ext = 'jpg';
     } else if (detectedMime.includes('png')) {
       ext = 'png';
     } else if (detectedMime.includes('webp')) {
       ext = 'webp';
+    }
+
+    // Server-side validation: Check allowed file extensions
+    const ALLOWED_EXTS = ['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', '3gp', 'wmv', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'mp3', 'wav', 'aac', 'm4a', 'ogg'];
+    if (ext !== 'bin' && !ALLOWED_EXTS.includes(ext)) {
+      return res.status(400).json({
+        error: `Formato de archivo .${ext} no admitido. Formatos válidos: MP4, MOV, WebM, AVI, MKV, JPG, PNG, WebP, MP3.`
+      });
     }
 
     // Generate safe unique filename
@@ -75,6 +221,29 @@ app.post('/api/media/upload', async (req, res) => {
     const targetFilePath = path.join(UPLOADS_DIR, uniqueFileName);
 
     await fs.promises.writeFile(targetFilePath, buffer);
+
+    const isVideo = detectedMime.startsWith('video/') || ['mp4', 'mov', 'webm', 'avi', 'mkv', 'm4v', '3gp'].includes(ext);
+
+    if (isVideo) {
+      const processRes = await processUploadedVideo(targetFilePath, filename || uniqueFileName);
+      const finalPhysicalPath = path.join(UPLOADS_DIR, processRes.finalFileName);
+      const finalStat = await fs.promises.stat(finalPhysicalPath).catch(() => null);
+      const finalSizeMb = finalStat ? Number((finalStat.size / (1024 * 1024)).toFixed(2)) : Number((buffer.length / (1024 * 1024)).toFixed(2));
+
+      return res.json({
+        success: true,
+        url: processRes.finalUrl,
+        posterUrl: processRes.posterUrl,
+        filename: processRes.finalFileName,
+        sizeMb: finalSizeMb,
+        mimeType: 'video/mp4',
+        duration: processRes.duration,
+        width: processRes.width,
+        height: processRes.height,
+        wasConverted: processRes.wasConverted,
+        codec: `${processRes.videoCodec}/${processRes.audioCodec}`
+      });
+    }
 
     const publicUrl = `/uploads/${uniqueFileName}`;
     const sizeMb = Number((buffer.length / (1024 * 1024)).toFixed(2));
@@ -89,6 +258,35 @@ app.post('/api/media/upload', async (req, res) => {
   } catch (error: any) {
     console.error('Error saving media upload:', error);
     return res.status(500).json({ error: 'Error al guardar el archivo multimedia en el servidor.' });
+  }
+});
+
+// Endpoint for safe media deletion from disk
+app.post('/api/media/delete', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url || typeof url !== 'string' || !url.startsWith('/uploads/')) {
+      return res.status(400).json({ error: 'URL de medio inválida.' });
+    }
+
+    const filename = path.basename(url.split('?')[0]);
+    const targetFilePath = path.join(UPLOADS_DIR, filename);
+
+    if (fs.existsSync(targetFilePath)) {
+      await fs.promises.unlink(targetFilePath);
+      console.log(`[Media Delete] Archivo eliminado: ${filename}`);
+      
+      const baseName = path.basename(filename, path.extname(filename));
+      const posterPath = path.join(UPLOADS_DIR, `poster_${baseName}.jpg`);
+      if (fs.existsSync(posterPath)) {
+        await fs.promises.unlink(posterPath).catch(() => {});
+      }
+    }
+
+    return res.json({ success: true, deleted: filename });
+  } catch (error) {
+    console.error('Error al eliminar archivo multimedia:', error);
+    return res.status(500).json({ error: 'Error al eliminar archivo multimedia.' });
   }
 });
 

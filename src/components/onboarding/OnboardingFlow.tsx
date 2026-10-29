@@ -141,8 +141,16 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   };
 
   const handleFinalizeOnboarding = () => {
+    const authUid = initialUserData?.uid || auth.currentUser?.uid;
+    if (!authUid) {
+      if (onOpenAuthModal) {
+        onOpenAuthModal();
+      }
+      return;
+    }
+
     registerUser({
-      id: initialUserData?.uid || auth.currentUser?.uid,
+      id: authUid,
       email: initialUserData?.email || auth.currentUser?.email || undefined,
       name: name.trim() || initialUserData?.name || 'Joven Cristiano',
       country,
@@ -180,12 +188,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
             ))}
           </div>
 
-          <button
-            onClick={() => setInProfileSetup(true)}
-            className="text-xs text-slate-400 hover:text-white font-medium px-2 py-1"
-          >
-            Saltar
-          </button>
+          <span className="text-xs text-amber-400 font-bold px-2 py-1">
+            Registro JA
+          </span>
         </div>
 
         {/* Center Illustration Card */}

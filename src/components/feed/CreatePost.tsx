@@ -9,6 +9,11 @@ import {
   uploadMediaFile 
 } from '../../utils/mediaUtils';
 import { 
+  validateVideoFile, 
+  validateImageFile, 
+  MediaValidationResult 
+} from '../../services/mediaValidationService';
+import { 
   Flame, 
   Image as ImageIcon, 
   Film, 
@@ -21,7 +26,9 @@ import {
   Send,
   RefreshCw,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 
 interface CreatePostProps {
@@ -44,10 +51,13 @@ export const CreatePost: React.FC<CreatePostProps> = ({
   const [bibleVerse, setBibleVerse] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoPoster, setVideoPoster] = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number | undefined>(undefined);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [imageFileName, setImageFileName] = useState<string>('');
   const [videoFileName, setVideoFileName] = useState<string>('');
   const [mediaMeta, setMediaMeta] = useState<string>('');
+  const [validationResult, setValidationResult] = useState<MediaValidationResult | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>(['JuventudAdventista', 'FuegoEspiritual']);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,6 +100,17 @@ export const CreatePost: React.FC<CreatePostProps> = ({
     setIsProcessingMedia(true);
     setFeedbackMsg(null);
 
+    // 1. Validar imagen antes de procesar
+    const validation = await validateImageFile(file, 'feed_post');
+    setValidationResult(validation);
+
+    if (!validation.isValid) {
+      setIsProcessingMedia(false);
+      setFeedbackMsg(validation.error || 'La imagen no cumple con los requisitos.');
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      return;
+    }
+
     try {
       const result = await compressImageFromGallery(file, 800, 1200, 0.72);
       const uploadRes = await uploadMediaFile(file);
@@ -99,10 +120,11 @@ export const CreatePost: React.FC<CreatePostProps> = ({
       setMediaMeta(`${result.width}x${result.height} · ${result.sizeKb} KB`);
       // Clear video
       setVideoUrl(null);
+      setVideoPoster(null);
+      setVideoDuration(undefined);
       setVideoFileName('');
     } catch (err) {
       console.error('Error optimizando foto de galería:', err);
-      // Fallback a lectura estándar
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -111,6 +133,8 @@ export const CreatePost: React.FC<CreatePostProps> = ({
           setImageFileName(file.name);
           setMediaMeta(`${Math.round(file.size / 1024)} KB`);
           setVideoUrl(null);
+          setVideoPoster(null);
+          setVideoDuration(undefined);
           setVideoFileName('');
         }
       };
@@ -128,29 +152,42 @@ export const CreatePost: React.FC<CreatePostProps> = ({
     setIsProcessingMedia(true);
     setFeedbackMsg(null);
 
+    // 1. Validación exhaustiva de tipo MIME, códec y límites de tamaño antes de subir
+    const validation = await validateVideoFile(file, 'feed_post');
+    setValidationResult(validation);
+
+    if (!validation.isValid) {
+      setIsProcessingMedia(false);
+      setFeedbackMsg(validation.error || 'El video seleccionado no es válido.');
+      if (videoInputRef.current) videoInputRef.current.value = '';
+      return;
+    }
+
     try {
-      const result = await processVideoFromGallery(file);
+      const result = await processVideoFromGallery(file, 'feed_post');
       setVideoUrl(result.url);
+      setVideoPoster(result.posterUrl || null);
+      setVideoDuration(result.duration || validation.duration);
       setMediaType('video');
       setVideoFileName(result.name);
-      setMediaMeta(`${result.sizeMb} MB ${result.duration ? `· ${result.duration}s` : ''}`);
+
+      const formatLabel = validation.isH264AacMp4 
+        ? ' · MP4 H.264/AAC Óptimo' 
+        : (result.wasConverted ? ' · Convertido a MP4 H.264' : ' · MP4 Universal');
+
+      setMediaMeta(`${result.sizeMb} MB${result.duration ? ` · ${result.duration}s` : ''}${formatLabel}`);
+      
+      // Mostrar recomendaciones si existen
+      if (validation.warnings.length > 0) {
+        setFeedbackMsg(validation.warnings[0]);
+      }
+
       // Clear image
       setImageUrl(null);
       setImageFileName('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error procesando video de galería:', err);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setVideoUrl(event.target.result as string);
-          setMediaType('video');
-          setVideoFileName(file.name);
-          setMediaMeta(`${(file.size / (1024 * 1024)).toFixed(1)} MB`);
-          setImageUrl(null);
-          setImageFileName('');
-        }
-      };
-      reader.readAsDataURL(file);
+      setFeedbackMsg(err.message || 'Error al procesar el archivo de video.');
     } finally {
       setIsProcessingMedia(false);
     }
@@ -165,6 +202,9 @@ export const CreatePost: React.FC<CreatePostProps> = ({
   const handleRemoveMedia = () => {
     setImageUrl(null);
     setVideoUrl(null);
+    setVideoPoster(null);
+    setVideoDuration(undefined);
+    setValidationResult(null);
     setMediaType(null);
     setImageFileName('');
     setVideoFileName('');
@@ -220,6 +260,8 @@ export const CreatePost: React.FC<CreatePostProps> = ({
         bibleVerse: newPost.bibleVerse,
         imageUrl: newPost.imageUrl,
         videoUrl: newPost.videoUrl,
+        videoPoster: videoPoster || undefined,
+        videoDuration: videoDuration,
         mediaType: newPost.mediaType,
         tags: newPost.tags,
       });
@@ -264,7 +306,7 @@ export const CreatePost: React.FC<CreatePostProps> = ({
       <input 
         type="file" 
         ref={videoInputRef} 
-        accept="video/mp4,video/webm,video/quicktime,video/*" 
+        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska,video/3gpp,video/*" 
         onChange={handleVideoChange} 
         className="hidden" 
       />
@@ -413,6 +455,36 @@ export const CreatePost: React.FC<CreatePostProps> = ({
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
+
+            {/* Validation & Codec Tag */}
+            {validationResult && (
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl bg-black/85 backdrop-blur-md border border-white/10 text-[10px] text-slate-300">
+                <div className="flex items-center gap-1.5 truncate">
+                  {validationResult.isH264AacMp4 ? (
+                    <span className="text-emerald-400 font-bold flex items-center gap-1 shrink-0">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                      Compatible Nativo (MP4 H.264/AAC)
+                    </span>
+                  ) : validationResult.fileType === 'video' ? (
+                    <span className="text-amber-400 font-semibold flex items-center gap-1 shrink-0">
+                      <Sparkles className="h-3 w-3 text-amber-400" />
+                      Transcodificado a MP4 Universal
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                      Foto Optimizada Web
+                    </span>
+                  )}
+                  {validationResult.aspectRatioLabel && (
+                    <span className="text-slate-400 truncate hidden sm:inline">· {validationResult.aspectRatioLabel}</span>
+                  )}
+                </div>
+                <span className="text-slate-400 font-mono text-[9px] shrink-0">
+                  {validationResult.sizeFormatted}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

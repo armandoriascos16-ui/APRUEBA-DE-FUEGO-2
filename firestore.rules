@@ -335,6 +335,19 @@ service cloud.firestore {
       allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid && isValidId(favId);
     }
 
+    // 28. Auth Events (Auditoría de Inicios de Sesión y Registros)
+    match /auth_events/{eventId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(eventId);
+      allow update, delete: if isAdmin();
+    }
+
+    // 29. Platform Statistics
+    match /stats/{statId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
     // Test connection doc
     match /test/connection {
       allow read: if true;

@@ -74,7 +74,8 @@ import {
   LiveStreamSession,
   IdeaItem,
   IdeaComment,
-  IdeaRating
+  IdeaRating,
+  AuthEvent
 } from '../types';
 import { 
   INITIAL_POSTS, 
@@ -240,11 +241,16 @@ export async function saveUserToFirestore(user: User): Promise<void> {
   const isAuthVerified = auth.currentUser?.emailVerified === true;
   const verifiedState = isSelf ? isAuthVerified : (user.emailVerified ?? false);
 
+  const isProfileComplete = Boolean(user.name && user.church && user.country);
+
   const userToSave = sanitizeForFirestore({
     ...user,
     id: targetId,
     emailVerified: targetId === 'admin_official' ? true : verifiedState,
-    isDemo: false
+    isDemo: false,
+    isProfileComplete,
+    lastActive: user.lastActive || new Date().toISOString(),
+    createdAt: user.createdAt || new Date().toISOString(),
   });
 
   const path = `users/${targetId}`;
@@ -261,7 +267,10 @@ export async function updateUserInFirestore(userId: string, updates: Partial<Use
     return;
   }
   const isSelf = auth.currentUser?.uid === targetId;
-  const sanitizedUpdates = sanitizeForFirestore(updates);
+  const sanitizedUpdates = sanitizeForFirestore({
+    ...updates,
+    lastActive: new Date().toISOString()
+  });
   
   // Prevent untrusted spoofing of emailVerified without Firebase Auth confirmation
   if (isSelf && sanitizedUpdates.emailVerified !== undefined && targetId !== 'admin_official') {
@@ -273,6 +282,53 @@ export async function updateUserInFirestore(userId: string, updates: Partial<Use
     await updateDoc(doc(db, 'users', targetId), sanitizedUpdates);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
+// ============================================================================
+// AUTH EVENTS & ACCESS AUDIT (MÓDULO: REGISTRO OBLIGATORIO Y ESTADÍSTICAS)
+// ============================================================================
+export async function recordAuthEventInFirestore(event: AuthEvent): Promise<void> {
+  const path = `auth_events/${event.id}`;
+  try {
+    await setDoc(doc(db, 'auth_events', event.id), sanitizeForFirestore(event));
+  } catch (error) {
+    console.warn('Error recording auth event:', error);
+  }
+}
+
+export async function getAuthEventsFromFirestore(): Promise<AuthEvent[]> {
+  const path = 'auth_events';
+  try {
+    const q = query(collection(db, path), limit(300));
+    const snap = await getDocs(q);
+    const events = snap.docs.map(d => d.data() as AuthEvent);
+    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return events;
+  } catch (error) {
+    console.warn('Error reading auth events from Firestore:', error);
+    return [];
+  }
+}
+
+export function subscribeToAuthEventsFromFirestore(onUpdate: (events: AuthEvent[]) => void): () => void {
+  const path = 'auth_events';
+  try {
+    const q = query(collection(db, path), limit(300));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const events = snapshot.docs.map(d => d.data() as AuthEvent);
+        events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        onUpdate(events);
+      },
+      (error) => {
+        console.warn('Subscription error on auth_events:', error);
+      }
+    );
+  } catch (error) {
+    console.warn('Error setting up auth_events listener:', error);
+    return () => {};
   }
 }
 

@@ -23,7 +23,11 @@ import {
   Camera,
   Film,
   Maximize2,
-  X
+  X,
+  Trash2,
+  Loader2,
+  AlertTriangle,
+  RotateCcw
 } from 'lucide-react';
 
 interface PostCardProps {
@@ -40,6 +44,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
     followUser,
     savePost,
     reportPost,
+    deletePost,
     setSelectedUserId,
     setActiveTab
   } = useApp();
@@ -49,6 +54,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [liveComments, setLiveComments] = useState<Comment[]>([]);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [videoKey, setVideoKey] = useState(0);
 
   const userReactions = (post.userReactions && currentUser?.id) ? (post.userReactions[currentUser.id] || []) : [];
   const isFollowing = (currentUser?.followingIds || []).includes(post.authorId);
@@ -94,6 +103,17 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
     }
     return 'Reciente';
   })();
+
+  const isAuthor = Boolean(currentUser?.id && post.authorId && currentUser.id === post.authorId);
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin' || currentUser?.email === 'harmonymusis@gmail.com' || currentUser?.email === 'harmonyestampadosr@gmail.com';
+  const canDelete = isAuthor || isAdmin;
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds || isNaN(seconds)) return null;
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   const handleCardClick = () => {
     incrementPostViews(post.id);
@@ -232,6 +252,22 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
                 <Flag className="h-3.5 w-3.5" />
                 <span>Reportar</span>
               </button>
+              {canDelete && (
+                <>
+                  <div className="my-1 border-t border-slate-800" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowDeleteModal(true);
+                    }}
+                    className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 font-medium transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+                    <span>Eliminar publicación</span>
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -305,18 +341,49 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
       )}
 
       {post.videoUrl && (
-        <div className="relative rounded-2xl overflow-hidden mb-3 max-h-[480px] bg-black border border-purple-500/30">
+        <div className="relative rounded-2xl overflow-hidden mb-3 bg-black border border-purple-500/30">
           <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-[10px] text-purple-300 font-bold border border-white/10 pointer-events-none">
             <Film className="h-3 w-3 text-purple-400" />
             <span>Video de Galería</span>
+            {post.videoDuration && (
+              <span className="text-[10px] text-purple-200/80 font-mono">
+                · {formatDuration(post.videoDuration)}
+              </span>
+            )}
           </div>
-          <video
-            src={post.videoUrl}
-            controls
-            playsInline
-            preload="metadata"
-            className="w-full h-auto max-h-[480px] rounded-2xl bg-black"
-          />
+
+          {videoError ? (
+            <div className="p-8 text-center flex flex-col items-center justify-center gap-3 bg-slate-950/90 text-slate-300 min-h-[220px]">
+              <AlertTriangle className="h-8 w-8 text-amber-400" />
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-white">No se pudo reproducir este video</p>
+                <p className="text-[11px] text-slate-400">Verifica la conexión a internet o el formato del archivo.</p>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVideoError(false);
+                  setVideoKey(prev => prev + 1);
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-colors"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Reintentar reproducción</span>
+              </button>
+            </div>
+          ) : (
+            <video
+              key={videoKey}
+              src={post.videoUrl}
+              poster={post.videoPoster || undefined}
+              controls
+              playsInline
+              preload="metadata"
+              onError={() => setVideoError(true)}
+              className="w-full h-auto max-h-[500px] object-contain rounded-2xl bg-black mx-auto"
+            />
+          )}
         </div>
       )}
 
@@ -492,6 +559,74 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
             postId={post.id}
             comments={displayComments}
           />
+        </div>
+      )}
+
+      {/* Delete Post Confirmation Modal */}
+      {showDeleteModal && (
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isDeleting) setShowDeleteModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-4 text-center"
+          >
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-white">
+                ¿Deseas eliminar esta publicación?
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Esta acción eliminará la publicación de los lugares donde aparece.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  try {
+                    setIsDeleting(true);
+                    await deletePost(post.id);
+                    setShowDeleteModal(false);
+                  } catch (err) {
+                    console.error('Error al eliminar publicación:', err);
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Eliminar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </article>
