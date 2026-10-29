@@ -32,7 +32,8 @@ import {
   IdeaStatus,
   IdeaComment,
   IdeaRating,
-  SavedAccount
+  SavedAccount,
+  AuthEvent
 } from '../types';
 import {
   SessionAccount,
@@ -41,7 +42,8 @@ import {
   removeSession,
   getActiveSessionUid,
   setActiveSessionUid,
-  fetchUserProfileByUid
+  fetchUserProfileByUid,
+  createDefaultProfileFromSession
 } from '../services/accountManagerService';
 import { INITIAL_IDEAS, INITIAL_IDEA_CATEGORIES } from '../data/ideasJaData';
 import { 
@@ -73,7 +75,7 @@ import {
 import confetti from 'canvas-confetti';
 import { verifyChallengeEvidence, VerificationResult } from '../services/challengeVerificationService';
 import { deleteMediaFileFromServer } from '../utils/mediaUtils';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import {
@@ -155,7 +157,10 @@ import {
   subscribeToUserNotificationsFromFirestore,
   markNotificationReadInFirestore,
   markAllUserNotificationsReadInFirestore,
-  deleteNotificationInFirestore
+  deleteNotificationInFirestore,
+  recordAuthEventInFirestore,
+  getAuthEventsFromFirestore,
+  subscribeToAuthEventsFromFirestore
 } from '../firebase/firestoreService';
 
 /**
@@ -347,6 +352,10 @@ interface AppContextType {
   isAccountSwitching: boolean;
   accountSwitchingMessage: string | null;
   setIsAccountSwitching: (loading: boolean) => void;
+  isAuthenticated: boolean;
+  isAuthReady: boolean;
+  authEvents: AuthEvent[];
+  logout: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -373,35 +382,122 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_USERS;
   });
 
+  // Servicio de sesiones autenticadas (hasta 2 sesiones con persistencia atómica)
+  const [savedSessions, setSavedSessions] = useState<SessionAccount[]>(() => getSavedSessions());
+  const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>(() => {
+    const list = getSavedSessions();
+    return list.map(s => ({
+      id: s.uid,
+      email: s.email,
+      name: s.displayName,
+      username: s.username,
+      avatar: s.photoURL,
+      church: s.church,
+      points: s.points,
+      level: s.level,
+      lastActive: s.lastActive,
+      slot: s.slot,
+      providerId: s.providerId
+    }));
+  });
+
+  const [isAccountSwitching, setIsAccountSwitching] = useState<boolean>(false);
+  const [accountSwitchingMessage, setAccountSwitchingMessage] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [authEvents, setAuthEvents] = useState<AuthEvent[]>([]);
+
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
+    const activeStored = getActiveSessionUid();
+    if (activeStored && !['user_david', 'user_sarah', 'user_mateo', 'user_valeria', 'user_samuel'].includes(activeStored)) {
+      return activeStored;
+    }
     const savedId = localStorage.getItem('apdf_current_user_id');
     if (savedId && !['user_david', 'user_sarah', 'user_mateo', 'user_valeria', 'user_samuel'].includes(savedId)) {
       return savedId;
     }
-    return auth.currentUser?.uid || ADMIN_USER.id;
+    const firstSession = getSavedSessions()[0];
+    if (firstSession?.uid) return firstSession.uid;
+    return auth.currentUser?.uid || '';
   });
 
-  const rawCurrentUser = allUsers.find(u => u.id === currentUserId) || allUsers[0] || ADMIN_USER;
+  const isAuthenticated = useMemo(() => {
+    if (auth.currentUser && auth.currentUser.uid) return true;
+    if (currentUserId && currentUserId !== '' && currentUserId !== 'admin_official' && !currentUserId.startsWith('mock_')) return true;
+    const activeStored = getActiveSessionUid();
+    if (activeStored && savedSessions.some(s => s.uid === activeStored || s.id === activeStored)) return true;
+    if (savedSessions.length > 0) return true;
+    return false;
+  }, [currentUserId, savedSessions]);
+
+  const rawCurrentUser = useMemo(() => {
+    if (!currentUserId) return null;
+    const found = allUsers.find(u => u.id === currentUserId);
+    if (found) return found;
+
+    const matchedSession = savedSessions.find(s => s.uid === currentUserId || s.id === currentUserId);
+    if (matchedSession) {
+      return createDefaultProfileFromSession(matchedSession);
+    }
+
+    return null;
+  }, [currentUserId, allUsers, savedSessions]);
 
   const currentUser: User = useMemo(() => {
+    if (!rawCurrentUser) {
+      return {
+        ...ADMIN_USER,
+        id: currentUserId || 'unauthenticated_guest',
+        name: 'Joven',
+        lastName: 'Invitado',
+        username: 'invitado',
+        email: '',
+        avatar: '',
+        role: 'user',
+        points: 0,
+        level: 1,
+        levelName: 'Explorador de la Fe',
+        isOfficialVerified: false,
+        badges: [],
+        followingIds: [],
+        followerIds: [],
+        savedPostIds: [],
+        joinedEventIds: [],
+        stats: {
+          challengesCompleted: 0,
+          eventsAttended: 0,
+          missionsDone: 0,
+          badgesCount: 0,
+          prayerStreak: 0,
+          bibleReadingStreak: 0,
+          activeStreakDays: 0,
+        },
+        privacy: {
+          isProfilePublic: true,
+          showLocation: true,
+          allowDirectMessages: false,
+          allowPrayerMentions: false,
+        }
+      };
+    }
+
     return {
-      ...ADMIN_USER,
       ...rawCurrentUser,
-      id: rawCurrentUser?.id || ADMIN_USER.id,
-      name: rawCurrentUser?.name || 'Joven Cristiano',
-      lastName: rawCurrentUser?.lastName || '',
-      username: rawCurrentUser?.username || `joven_${(rawCurrentUser?.id || 'user').slice(0, 5)}`,
-      email: rawCurrentUser?.email || '',
-      avatar: rawCurrentUser?.avatar || '',
-      points: typeof rawCurrentUser?.points === 'number' ? rawCurrentUser.points : 0,
-      level: typeof rawCurrentUser?.level === 'number' ? rawCurrentUser.level : 1,
-      levelName: rawCurrentUser?.levelName || 'Explorador de la Fe',
-      badges: Array.isArray(rawCurrentUser?.badges) ? rawCurrentUser.badges : [],
-      followingIds: Array.isArray(rawCurrentUser?.followingIds) ? rawCurrentUser.followingIds : [],
-      followerIds: Array.isArray(rawCurrentUser?.followerIds) ? rawCurrentUser.followerIds : [],
-      savedPostIds: Array.isArray(rawCurrentUser?.savedPostIds) ? rawCurrentUser.savedPostIds : [],
-      joinedEventIds: Array.isArray(rawCurrentUser?.joinedEventIds) ? rawCurrentUser.joinedEventIds : [],
-      stats: rawCurrentUser?.stats || {
+      id: rawCurrentUser.id,
+      name: rawCurrentUser.name || 'Joven Cristiano',
+      lastName: rawCurrentUser.lastName || '',
+      username: rawCurrentUser.username || `joven_${(rawCurrentUser.id || 'user').slice(0, 5)}`,
+      email: rawCurrentUser.email || '',
+      avatar: rawCurrentUser.avatar || '',
+      points: typeof rawCurrentUser.points === 'number' ? rawCurrentUser.points : 0,
+      level: typeof rawCurrentUser.level === 'number' ? rawCurrentUser.level : 1,
+      levelName: rawCurrentUser.levelName || 'Explorador de la Fe',
+      role: (rawCurrentUser.email === 'harmonymusis@gmail.com' || rawCurrentUser.email === 'harmonyestampadosr@gmail.com' || rawCurrentUser.role === 'admin' || rawCurrentUser.role === 'superadmin') ? (rawCurrentUser.role || 'admin') : 'user',
+      badges: Array.isArray(rawCurrentUser.badges) ? rawCurrentUser.badges : [],
+      followingIds: Array.isArray(rawCurrentUser.followingIds) ? rawCurrentUser.followingIds : [],
+      followerIds: Array.isArray(rawCurrentUser.followerIds) ? rawCurrentUser.followerIds : [],
+      savedPostIds: Array.isArray(rawCurrentUser.savedPostIds) ? rawCurrentUser.savedPostIds : [],
+      joinedEventIds: Array.isArray(rawCurrentUser.joinedEventIds) ? rawCurrentUser.joinedEventIds : [],
+      stats: rawCurrentUser.stats || {
         challengesCompleted: 0,
         eventsAttended: 0,
         missionsDone: 0,
@@ -410,12 +506,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         bibleReadingStreak: 0,
         activeStreakDays: 0,
       },
-      privacy: rawCurrentUser?.privacy || {
+      privacy: rawCurrentUser.privacy || {
         isProfilePublic: true,
         showLocation: true,
+        allowDirectMessages: true,
+        allowPrayerMentions: true,
       }
     };
-  }, [rawCurrentUser]);
+  }, [rawCurrentUser, currentUserId]);
 
 
   const [posts, setPosts] = useState<Post[]>(() => {
@@ -598,30 +696,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pointTransactions, setPointTransactions] = useState<PointTransaction[]>([]);
   const [invitations, setInvitations] = useState<FriendInvitation[]>([]);
 
-  // Cuentas recordadas/guardadas en este dispositivo (máximo 2 cuentas)
-  const [savedAccounts, setSavedAccounts] = useState<SavedAccount[]>(() => {
-    const saved = localStorage.getItem('apdf_saved_accounts');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.slice(0, 2);
-        }
-      } catch (e) {
-        console.warn('Error reading saved accounts from localStorage:', e);
-      }
-    }
-    return [];
-  });
-
   useEffect(() => {
     safeLocalStorageSet('apdf_saved_accounts', JSON.stringify(savedAccounts.slice(0, 2)));
   }, [savedAccounts]);
 
-  // Servicio de sesiones autenticadas (hasta 2 sesiones gestionadas con límite estricto)
-  const [savedSessions, setSavedSessions] = useState<SessionAccount[]>(() => getSavedSessions());
-  const [isAccountSwitching, setIsAccountSwitching] = useState<boolean>(false);
-  const [accountSwitchingMessage, setAccountSwitchingMessage] = useState<string | null>(null);
 
   const refreshUsersCount = async (): Promise<number> => {
     try {
@@ -910,28 +988,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             displayName: user.displayName || (profile ? `${profile.name} ${profile.lastName}`.trim() : 'Joven Cristiano'),
             username: profile?.username || user.email?.split('@')[0],
             photoURL: user.photoURL || profile?.avatar || '',
+            church: profile?.church,
+            city: profile?.city,
+            points: profile?.points || 0,
+            level: profile?.level || 1,
             slot: 1,
             lastActive: new Date().toISOString(),
             providerId: user.providerData?.[0]?.providerId || 'google.com'
           };
           const res = saveSession(sessionData);
           setSavedSessions(res.sessions);
+          setSavedAccounts(res.sessions.map(s => ({
+            id: s.uid,
+            email: s.email,
+            name: s.displayName,
+            username: s.username,
+            avatar: s.photoURL,
+            church: s.church,
+            points: s.points,
+            level: s.level,
+            lastActive: s.lastActive,
+            slot: s.slot,
+            providerId: s.providerId
+          })));
 
           // Si el usuario ya había seleccionado activamente otra cuenta en este dispositivo, respetamos su elección
           const activeStoredUid = getActiveSessionUid();
-          const shouldKeepStored = activeStoredUid && res.sessions.some(s => s.uid === activeStoredUid);
+          const shouldKeepStored = activeStoredUid && res.sessions.some(s => s.uid === activeStoredUid || s.id === activeStoredUid);
           const targetUid = shouldKeepStored ? activeStoredUid : user.uid;
 
           setCurrentUserId(targetUid);
           setActiveSessionUid(targetUid);
+
+          // Registrar evento de auditoría de autenticación
+          recordAuthEventInFirestore({
+            id: `ev_${Date.now()}_${user.uid.slice(0, 5)}`,
+            userId: user.uid,
+            userEmail: user.email || '',
+            userName: user.displayName || profile?.name || 'Usuario',
+            eventType: 'login',
+            provider: user.providerData?.[0]?.providerId || 'password',
+            timestamp: new Date().toISOString()
+          }).catch(() => {});
         } catch (err) {
           console.warn('Error al procesar sesión activa:', err);
         }
+      } else {
+        const activeStored = getActiveSessionUid();
+        const storedSessions = getSavedSessions();
+        if (activeStored && storedSessions.some(s => s.uid === activeStored || s.id === activeStored)) {
+          setCurrentUserId(activeStored);
+        } else if (storedSessions.length > 0) {
+          setCurrentUserId(storedSessions[0].uid);
+          setActiveSessionUid(storedSessions[0].uid);
+        }
+      }
+      setIsAuthReady(true);
+    });
+
+    const unsubscribeAuthEvents = subscribeToAuthEventsFromFirestore((events) => {
+      if (events && events.length > 0) {
+        setAuthEvents(events);
       }
     });
 
     return () => {
       unsubscribeAuth();
+      unsubscribeAuthEvents();
     };
   }, []);
 
@@ -997,27 +1120,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [currentUser.id, currentUser.email, currentUser.name, currentUser.avatar, currentUser.points, currentUser.level]);
 
   const addSavedAccount = (account: SavedAccount): boolean => {
-    let success = false;
-    setSavedAccounts(prev => {
-      const existsIndex = prev.findIndex(a => a.id === account.id || (account.email && a.email.toLowerCase() === account.email.toLowerCase()));
-      if (existsIndex >= 0) {
-        const updated = [...prev];
-        updated[existsIndex] = { ...updated[existsIndex], ...account, lastActive: new Date().toISOString() };
-        success = true;
-        return updated;
-      }
-      if (prev.length >= 2) {
-        success = false;
-        return prev;
-      }
-      success = true;
-      return [...prev, { ...account, lastActive: new Date().toISOString() }];
-    });
-    return success;
+    const sessionData: SessionAccount = {
+      uid: account.id,
+      email: account.email,
+      displayName: account.name,
+      username: account.username,
+      photoURL: account.avatar,
+      church: account.church,
+      points: account.points,
+      level: account.level,
+      lastActive: new Date().toISOString(),
+      slot: account.slot || 1,
+      providerId: account.providerId || 'password'
+    };
+    const res = saveSession(sessionData);
+    setSavedSessions(res.sessions);
+    setSavedAccounts(res.sessions.map(s => ({
+      id: s.uid,
+      email: s.email,
+      name: s.displayName,
+      username: s.username,
+      avatar: s.photoURL,
+      church: s.church,
+      points: s.points,
+      level: s.level,
+      lastActive: s.lastActive,
+      slot: s.slot,
+      providerId: s.providerId
+    })));
+    return res.success;
   };
 
   const removeSavedAccount = (accountId: string) => {
-    setSavedAccounts(prev => prev.filter(a => a.id !== accountId));
+    const updated = removeSession(accountId);
+    setSavedSessions(updated);
+    setSavedAccounts(updated.map(s => ({
+      id: s.uid,
+      email: s.email,
+      name: s.displayName,
+      username: s.username,
+      avatar: s.photoURL,
+      church: s.church,
+      points: s.points,
+      level: s.level,
+      lastActive: s.lastActive,
+      slot: s.slot,
+      providerId: s.providerId
+    })));
   };
 
   const switchAccountSession = async (targetUid: string): Promise<boolean> => {
@@ -1030,15 +1179,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // 2. Obtener o verificar perfil de la cuenta destino
       let profile = allUsers.find(u => u.id === targetUid);
       if (!profile) {
-        const fetched = await fetchUserProfileByUid(targetUid);
-        if (fetched) {
-          profile = fetched;
+        const matched = savedSessions.find(s => s.uid === targetUid || s.id === targetUid);
+        if (matched) {
+          const fallbackProfile = createDefaultProfileFromSession(matched);
+          profile = fallbackProfile;
           setAllUsers(prev => {
             const exists = prev.some(u => u.id === targetUid);
-            if (exists) return prev.map(u => u.id === targetUid ? { ...u, ...fetched } : u);
-            return [fetched, ...prev];
+            if (exists) return prev;
+            return [fallbackProfile, ...prev];
           });
         }
+        // Buscar perfil más reciente en la nube de fondo
+        fetchUserProfileByUid(targetUid).then(fetched => {
+          if (fetched) {
+            setAllUsers(prev => {
+              const exists = prev.some(u => u.id === targetUid);
+              if (exists) return prev.map(u => u.id === targetUid ? { ...u, ...fetched } : u);
+              return [fetched, ...prev];
+            });
+          }
+        }).catch(() => {});
       }
 
       // 3. Establecer como cuenta activa en estado y localStorage
@@ -1047,10 +1207,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('apdf_current_user_id', targetUid);
       localStorage.setItem('apdf_registered', 'true');
 
-      // 4. Actualizar fecha de actividad en las sesiones y cuentas guardadas
+      // 4. Cargar notificaciones específicas de este usuario
+      const cachedNotifs = localStorage.getItem(`apdf_notifications_${targetUid}`);
+      if (cachedNotifs) {
+        try {
+          setNotifications(JSON.parse(cachedNotifs));
+        } catch {
+          // ignore
+        }
+      }
+
+      // 5. Actualizar fecha de actividad en las sesiones y cuentas guardadas
       setSavedSessions(prev => {
         const updated = prev.map(s => 
-          s.uid === targetUid ? { ...s, lastActive: new Date().toISOString() } : s
+          (s.uid === targetUid || s.id === targetUid) ? { ...s, lastActive: new Date().toISOString() } : s
         );
         safeLocalStorageSet('apdf_auth_sessions_v2', JSON.stringify(updated));
         return updated;
@@ -1060,7 +1230,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         a.id === targetUid ? { ...a, lastActive: new Date().toISOString() } : a
       ));
 
-      // 5. Limpiar modales y estados temporales
+      // 6. Limpiar modales y estados temporales
       setSelectedPostForDetail(null);
       setContentUnavailableMessage(null);
 
