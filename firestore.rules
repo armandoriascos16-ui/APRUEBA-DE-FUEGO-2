@@ -17,8 +17,9 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'harmonymusis@gmail.com' ||
-        request.auth.token.email == 'harmonyestampadosr@gmail.com' ||
+        request.auth.token.email.lower() == 'armandoriascos16@gmail.com' ||
+        request.auth.token.email.lower() == 'harmonymusis@gmail.com' ||
+        request.auth.token.email.lower() == 'harmonyestampadosr@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -124,9 +125,9 @@ service cloud.firestore {
       allow create, update: if isValidId(storyId);
       allow delete: if isSignedIn();
 
-      // Subcolección de comentarios en historias: solo autenticados, solo autor modifica su comentario
+      // Subcolección de comentarios en historias: lectura pública, creación autenticada por autor
       match /comments/{commentId} {
-        allow read: if isSignedIn();
+        allow read: if true;
         allow create: if isSignedIn() && isValidId(commentId) && request.resource.data.authorId == request.auth.uid;
         allow update: if isSignedIn() && isValidId(commentId) && (
           request.auth.uid == resource.data.authorId || 
@@ -136,7 +137,7 @@ service cloud.firestore {
         allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
 
         match /replies/{replyId} {
-          allow read: if isSignedIn();
+          allow read: if true;
           allow create: if isSignedIn() && isValidId(replyId) && request.resource.data.authorId == request.auth.uid;
           allow update: if isSignedIn() && isValidId(replyId) && (
             request.auth.uid == resource.data.authorId || 
@@ -147,9 +148,9 @@ service cloud.firestore {
         }
       }
 
-      // Subcolección de reacciones en historias: solo autenticados, solo usuario modifica su reacción
+      // Subcolección de reacciones en historias: lectura pública, modificación por usuario
       match /reactions/{userId} {
-        allow read: if isSignedIn();
+        allow read: if true;
         allow create, update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
         allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       }
@@ -164,7 +165,7 @@ service cloud.firestore {
 
     // 6a. Colección raíz: story_comments
     match /story_comments/{commentId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create: if isSignedIn() && isValidId(commentId) && request.resource.data.authorId == request.auth.uid;
       allow update: if isSignedIn() && isValidId(commentId) && (
         request.auth.uid == resource.data.authorId || 
@@ -176,7 +177,7 @@ service cloud.firestore {
 
     // 6b. Colección raíz: story_reactions
     match /story_reactions/{reactionId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow create, update: if isSignedIn() && isValidId(reactionId) && request.resource.data.userId == request.auth.uid;
       allow delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
     }

@@ -963,11 +963,15 @@ httpServer.on('upgrade', (request, socket, head) => {
       return;
     }
 
-    if (viteDevServer?.ws) {
+    if (viteDevServer?.ws && typeof viteDevServer.ws.handleUpgrade === 'function') {
       viteDevServer.ws.handleUpgrade(request, socket, head);
+      return;
     }
+
+    socket.destroy();
   } catch (err) {
     console.warn('[HTTP Server] WebSocket upgrade notice:', err);
+    try { socket.destroy(); } catch {}
   }
 });
 

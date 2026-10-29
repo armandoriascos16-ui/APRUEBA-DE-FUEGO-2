@@ -58,7 +58,7 @@ export const EventsView: React.FC = () => {
   const [newEventDesc, setNewEventDesc] = useState('');
   const [newEventCategory, setNewEventCategory] = useState<EventItem['category']>('ja_especial');
 
-  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.email === 'harmonymusis@gmail.com' || currentUser.email === 'harmonyestampadosr@gmail.com';
+  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin' || currentUser.email?.toLowerCase() === 'armandoriascos16@gmail.com' || currentUser.email === 'harmonymusis@gmail.com' || currentUser.email === 'harmonyestampadosr@gmail.com';
 
   // Merge events with genuine verified list (avoiding duplicates by id)
   const allVerifiedEvents = useMemo(() => {

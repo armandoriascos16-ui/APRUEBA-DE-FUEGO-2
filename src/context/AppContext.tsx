@@ -491,7 +491,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       points: typeof rawCurrentUser.points === 'number' ? rawCurrentUser.points : 0,
       level: typeof rawCurrentUser.level === 'number' ? rawCurrentUser.level : 1,
       levelName: rawCurrentUser.levelName || 'Explorador de la Fe',
-      role: (rawCurrentUser.email === 'harmonymusis@gmail.com' || rawCurrentUser.email === 'harmonyestampadosr@gmail.com' || rawCurrentUser.role === 'admin' || rawCurrentUser.role === 'superadmin') ? (rawCurrentUser.role || 'admin') : 'user',
+      role: (rawCurrentUser.email?.toLowerCase() === 'armandoriascos16@gmail.com' || rawCurrentUser.email === 'harmonymusis@gmail.com' || rawCurrentUser.email === 'harmonyestampadosr@gmail.com' || rawCurrentUser.role === 'admin' || rawCurrentUser.role === 'superadmin') ? (rawCurrentUser.role || 'admin') : 'user',
       badges: Array.isArray(rawCurrentUser.badges) ? rawCurrentUser.badges : [],
       followingIds: Array.isArray(rawCurrentUser.followingIds) ? rawCurrentUser.followingIds : [],
       followerIds: Array.isArray(rawCurrentUser.followerIds) ? rawCurrentUser.followerIds : [],
@@ -812,17 +812,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await initializeFirestoreData();
       try {
         const [
-          cloudPosts, 
-          cloudChallenges, 
-          cloudEvents, 
-          cloudPrayers, 
-          cloudTestimonials, 
-          cloudSubmissions, 
-          cloudUsers, 
-          cloudStories,
-          realCount,
-          cloudTxs
-        ] = await Promise.all([
+          postsRes, 
+          challengesRes, 
+          eventsRes, 
+          prayersRes, 
+          testimonialsRes, 
+          submissionsRes, 
+          usersRes, 
+          storiesRes,
+          countRes,
+          txsRes
+        ] = await Promise.allSettled([
           getPostsFromFirestore(),
           getChallengesFromFirestore(),
           getEventsFromFirestore(),
@@ -832,10 +832,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           getAllUsersFromFirestore(),
           getStoriesFromFirestore(),
           getRealUsersCountFromFirestore(),
-          getAllPointTransactionsFromFirestore(),
+          auth.currentUser ? getAllPointTransactionsFromFirestore() : Promise.resolve([]),
         ]);
 
-        if (cloudPosts.length > 0) {
+        if (postsRes.status === 'fulfilled' && postsRes.value.length > 0) {
+          const cloudPosts = postsRes.value;
           setPosts(prev => {
             const map = new Map<string, Post>();
             prev.forEach(p => map.set(p.id, p));
@@ -845,7 +846,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             );
           });
         }
-        if (cloudStories.length > 0) {
+
+        if (storiesRes.status === 'fulfilled' && storiesRes.value.length > 0) {
+          const cloudStories = storiesRes.value;
           setStories(prev => {
             const now = Date.now();
             const map = new Map<string, Story>();
@@ -868,19 +871,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return merged;
           });
         }
-        if (cloudChallenges.length > 0) setChallenges(cloudChallenges);
-        if (cloudEvents.length > 0) setEvents(cloudEvents);
-        if (cloudPrayers.length > 0) setPrayerRequests(cloudPrayers);
-        if (cloudTestimonials.length > 0) setTestimonials(cloudTestimonials);
-        if (cloudSubmissions.length > 0) setSubmissions(cloudSubmissions);
-        if (cloudTxs.length > 0) setPointTransactions(cloudTxs);
-        if (realCount > 0) {
-          setRegisteredUsersCount(realCount);
+
+        if (challengesRes.status === 'fulfilled' && challengesRes.value.length > 0) setChallenges(challengesRes.value);
+        if (eventsRes.status === 'fulfilled' && eventsRes.value.length > 0) setEvents(eventsRes.value);
+        if (prayersRes.status === 'fulfilled' && prayersRes.value.length > 0) setPrayerRequests(prayersRes.value);
+        if (testimonialsRes.status === 'fulfilled' && testimonialsRes.value.length > 0) setTestimonials(testimonialsRes.value);
+        if (submissionsRes.status === 'fulfilled' && submissionsRes.value.length > 0) setSubmissions(submissionsRes.value);
+        if (txsRes.status === 'fulfilled' && txsRes.value.length > 0) setPointTransactions(txsRes.value);
+        if (countRes.status === 'fulfilled' && countRes.value > 0) {
+          setRegisteredUsersCount(countRes.value);
         }
 
         // Only real users from Firestore without demo mocks
-        if (cloudUsers.length > 0) {
-          const authenticUsers = cloudUsers.filter(u => 
+        if (usersRes.status === 'fulfilled' && usersRes.value.length > 0) {
+          const authenticUsers = usersRes.value.filter(u => 
             !['user_david', 'user_sarah', 'user_mateo', 'user_valeria', 'user_samuel'].includes(u.id) &&
             !u.email?.endsWith('@ejemplo.com') &&
             !u.isDemo
@@ -895,7 +899,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (isPermission) {
           console.warn('[Firestore] Consulta inicial con restricciones de permisos de seguridad:', err?.code || err?.message);
         } else {
-          console.info('[Firestore] Datos confirmados locales en uso mientras se verifica la conexión remota.');
+          console.info('[Firestore] Sincronización en proceso con datos verificados en almacenamiento local.');
         }
       }
     };
@@ -978,13 +982,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const profile = await fetchUserProfileByUid(user.uid);
-          if (profile) {
-            setAllUsers(prev => {
-              const exists = prev.some(u => u.id === user.uid);
-              if (exists) return prev.map(u => u.id === user.uid ? { ...u, ...profile } : u);
-              return [profile, ...prev];
-            });
+          // Carga inicial de datos de perfil con try-catch detallado (sin secretos)
+          let profile: User | null = null;
+          try {
+            profile = await fetchUserProfileByUid(user.uid);
+            if (profile) {
+              setAllUsers(prev => {
+                const exists = prev.some(u => u.id === user.uid);
+                if (exists) return prev.map(u => u.id === user.uid ? { ...u, ...profile } : u);
+                return [profile!, ...prev];
+              });
+            }
+          } catch (profileReadError: any) {
+            const isPermission = profileReadError?.code === 'permission-denied' || String(profileReadError?.message).includes('insufficient permissions');
+            console.error('[Initial Profile Load Capture]', JSON.stringify({
+              operation: 'getDoc',
+              collection: 'users',
+              targetDocId: user.uid ? `${user.uid.slice(0, 8)}...` : 'empty',
+              isAuthenticated: true,
+              authUidPrefix: user.uid ? `${user.uid.slice(0, 8)}...` : 'empty',
+              errorCode: profileReadError?.code || 'unknown',
+              errorMessage: profileReadError?.message || String(profileReadError),
+              errorCategory: isPermission ? 'PERMISSION_DENIED' : 'NETWORK_OR_TRANSPORT',
+              timestamp: new Date().toISOString()
+            }));
           }
 
           const sessionData: SessionAccount = {

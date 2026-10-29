@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db, auth } from '../firebase/config';
 import { User, SavedAccount } from '../types';
 
 export interface SessionAccount {
@@ -300,7 +300,7 @@ export function createDefaultProfileFromSession(session: SessionAccount): User {
     points: typeof session.points === 'number' ? session.points : 0,
     level: typeof session.level === 'number' ? session.level : 1,
     levelName: session.levelName || 'Explorador de la Fe',
-    role: (session.email === 'harmonymusis@gmail.com' || session.email === 'harmonyestampadosr@gmail.com' || session.role === 'admin' || session.role === 'superadmin') ? 'admin' : 'user',
+    role: (session.email?.toLowerCase() === 'armandoriascos16@gmail.com' || session.email === 'harmonymusis@gmail.com' || session.email === 'harmonyestampadosr@gmail.com' || session.role === 'admin' || session.role === 'superadmin') ? 'admin' : 'user',
     isOfficialVerified: false,
     badges: [],
     stats: {
@@ -333,14 +333,27 @@ export function createDefaultProfileFromSession(session: SessionAccount): User {
  * Carga el perfil real del usuario desde Firestore asegurando aislamiento total de datos.
  */
 export async function fetchUserProfileByUid(uid: string): Promise<User | null> {
+  const path = `users/${uid}`;
   try {
     const userDocRef = doc(db, 'users', uid);
     const snap = await getDoc(userDocRef);
     if (snap.exists()) {
       return { id: snap.id, ...snap.data() } as User;
     }
-  } catch (err) {
-    console.warn('Error al cargar perfil desde Firestore para UID:', uid, err);
+    return null;
+  } catch (err: any) {
+    const isPermission = err?.code === 'permission-denied' || String(err?.message).includes('insufficient permissions');
+    console.error('[Firestore Profile Read Audit]', JSON.stringify({
+      operation: 'getDoc',
+      collection: 'users',
+      documentIdPrefix: uid ? `${uid.slice(0, 6)}...` : 'none',
+      isAuthenticated: Boolean(auth.currentUser),
+      authUidPrefix: auth.currentUser?.uid ? `${auth.currentUser.uid.slice(0, 6)}...` : 'none',
+      errorCategory: isPermission ? 'PERMISSION_DENIED' : 'NETWORK_OR_TRANSPORT',
+      code: err?.code || 'unknown',
+      message: err?.message || String(err),
+      timestamp: new Date().toISOString()
+    }));
+    throw err;
   }
-  return null;
 }

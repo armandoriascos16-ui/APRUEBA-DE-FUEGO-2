@@ -189,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications, onOpenSearc
             </button>
 
             {/* Admin Panel Quick Access Button */}
-            {(currentUser.role === 'superadmin' || currentUser.role === 'admin' || currentUser.email === 'harmonymusis@gmail.com' || currentUser.email === 'harmonyestampadosr@gmail.com') && (
+            {(currentUser.role === 'superadmin' || currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'armandoriascos16@gmail.com' || currentUser.email === 'harmonymusis@gmail.com' || currentUser.email === 'harmonyestampadosr@gmail.com') && (
               <button
                 onClick={() => setActiveTab('admin')}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-xs shadow-md shadow-amber-500/25 hover:from-amber-400 hover:to-orange-400 transition-all group"

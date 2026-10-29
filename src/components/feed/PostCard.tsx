@@ -105,7 +105,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onComment }) => {
   })();
 
   const isAuthor = Boolean(currentUser?.id && post.authorId && currentUser.id === post.authorId);
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin' || currentUser?.email === 'harmonymusis@gmail.com' || currentUser?.email === 'harmonyestampadosr@gmail.com';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin' || currentUser?.email?.toLowerCase() === 'armandoriascos16@gmail.com' || currentUser?.email === 'harmonymusis@gmail.com' || currentUser?.email === 'harmonyestampadosr@gmail.com';
   const canDelete = isAuthor || isAdmin;
 
   const formatDuration = (seconds?: number) => {

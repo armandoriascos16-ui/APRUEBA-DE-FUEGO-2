@@ -265,6 +265,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
   const isAdmin = currentUser.role === 'superadmin' || 
     currentUser.role === 'admin' || 
+    currentUser.email?.toLowerCase() === 'armandoriascos16@gmail.com' ||
     currentUser.email === 'harmonymusis@gmail.com' || 
     currentUser.email === 'harmonyestampadosr@gmail.com';
 

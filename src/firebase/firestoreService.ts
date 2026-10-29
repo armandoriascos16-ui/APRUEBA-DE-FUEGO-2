@@ -99,8 +99,9 @@ export async function initializeFirestoreData(): Promise<void> {
     await testConnection();
 
     // Only authorized administrators may seed official collections on remote database
-    const userEmail = auth.currentUser?.email;
+    const userEmail = auth.currentUser?.email?.toLowerCase();
     const isAdmin = auth.currentUser && (
+      userEmail === 'armandoriascos16@gmail.com' ||
       userEmail === 'harmonymusis@gmail.com' || 
       userEmail === 'harmonyestampadosr@gmail.com'
     );
@@ -230,8 +231,13 @@ export async function initializeFirestoreData(): Promise<void> {
       }
       console.log('Firestore: ideas_ja seeded with practical ministry ideas.');
     }
-  } catch (error) {
-    console.warn('Initial seeding could not connect or permission pending, using local cache:', error);
+  } catch (error: any) {
+    const isPermission = error?.code === 'permission-denied' || String(error?.message).includes('insufficient permissions');
+    if (isPermission) {
+      console.warn('[Firestore Seeding Notice] Escritura remota restringida por políticas de seguridad.');
+    } else {
+      console.warn('[Firestore Seeding Notice] Conexión diferida por estado de red:', error?.message || error);
+    }
   }
 }
 
