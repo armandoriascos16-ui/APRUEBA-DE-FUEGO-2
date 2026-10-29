@@ -890,8 +890,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setRegisteredUsersCount(authenticUsers.length);
           }
         }
-      } catch (err) {
-        console.warn('Firestore initial sync fallback to local cache:', err);
+      } catch (err: any) {
+        const isPermission = err?.code === 'permission-denied' || String(err?.message).includes('insufficient permissions');
+        if (isPermission) {
+          console.warn('[Firestore] Consulta inicial con restricciones de permisos de seguridad:', err?.code || err?.message);
+        } else {
+          console.info('[Firestore] Datos confirmados locales en uso mientras se verifica la conexión remota.');
+        }
       }
     };
 
@@ -1027,7 +1032,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             userEmail: user.email || '',
             userName: user.displayName || profile?.name || 'Usuario',
             eventType: 'login',
-            provider: user.providerData?.[0]?.providerId || 'password',
+            providerId: user.providerData?.[0]?.providerId || 'password',
             timestamp: new Date().toISOString()
           }).catch(() => {});
         } catch (err) {
@@ -2892,6 +2897,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDiscussions(prev => prev.map(d => d.id === discussionId ? { ...d, likesCount: d.likesCount + 1 } : d));
   };
 
+  const logout = async (): Promise<void> => {
+    try {
+      if (currentUserId) {
+        removeSession(currentUserId);
+      }
+      await signOut(auth);
+    } catch (e) {
+      console.warn('SignOut warning:', e);
+    }
+    const remaining = getSavedSessions();
+    setSavedSessions(remaining);
+    setSavedAccounts(remaining.map(s => ({
+      id: s.uid,
+      email: s.email,
+      name: s.displayName,
+      username: s.username,
+      avatar: s.photoURL,
+      church: s.church,
+      points: s.points,
+      level: s.level,
+      lastActive: s.lastActive,
+      slot: s.slot,
+      providerId: s.providerId
+    })));
+
+    if (remaining.length > 0) {
+      const nextAcc = remaining[0];
+      setCurrentUserId(nextAcc.uid);
+      setActiveSessionUid(nextAcc.uid);
+      localStorage.setItem('apdf_current_user_id', nextAcc.uid);
+    } else {
+      setCurrentUserId('');
+      localStorage.removeItem('apdf_current_user_id');
+      localStorage.removeItem('apdf_active_session_uid');
+      localStorage.removeItem('apdf_registered');
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       currentUser,
@@ -2995,6 +3038,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isAccountSwitching,
       accountSwitchingMessage,
       setIsAccountSwitching,
+      isAuthenticated,
+      isAuthReady,
+      authEvents,
+      logout,
     }}>
       {children}
     </AppContext.Provider>

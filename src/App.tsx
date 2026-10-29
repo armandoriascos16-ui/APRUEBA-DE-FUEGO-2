@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/layout/Navbar';
 import { BottomNav } from './components/layout/BottomNav';
@@ -9,45 +9,56 @@ import { EventsView } from './components/events/EventsView';
 import { PlayerCardProfile } from './components/profile/PlayerCardProfile';
 import { ChatView } from './components/chat/ChatView';
 import { PrayerWall } from './components/prayer/PrayerWall';
-import { BibleGames } from './components/games/BibleGames';
-import { ChannelsView } from './components/channels/ChannelsView';
-import { LeaderboardView } from './components/ranking/LeaderboardView';
-import { OfficialSourcesView } from './components/official/OfficialSourcesView';
-import { ChurchesView } from './components/churches/ChurchesView';
-import { AdminDashboard } from './components/admin/AdminDashboard';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { NotificationsDrawer } from './components/notifications/NotificationsDrawer';
-import { NotificationsView } from './components/notifications/NotificationsView';
 import { NotificationTargetModal } from './components/notifications/NotificationTargetModal';
 import { GlobalSearchModal } from './components/search/GlobalSearchModal';
 import { AuthModal } from './components/auth/AuthModal';
-import { ChristianCinemaPortal } from './components/cinema/ChristianCinemaPortal';
-import { YouthActivitiesPortal } from './components/activities/YouthActivitiesPortal';
-import { YouthMaterialsPortal } from './components/materials/YouthMaterialsPortal';
-import { CommunitiesPortal } from './components/communities/CommunitiesPortal';
+import { AuthGateScreen } from './components/auth/AuthGateScreen';
 import { CreateActionSheetModal } from './components/feed/CreateActionSheetModal';
 import { CreatePostModal } from './components/feed/CreatePostModal';
 import { CreateStoryModal } from './components/feed/CreateStoryModal';
 import { LiveStreamingPortal } from './components/live/LiveStreamingPortal';
-import { LiveTVPortal } from './components/tv/LiveTVPortal';
-import { ChristianBooksPortal } from './components/library/ChristianBooksPortal';
-import { AdventistHymnalPortal } from './components/hymnal/AdventistHymnalPortal';
-import { AdventistNewsView } from './components/news/AdventistNewsView';
-import { ComunidadJuvenilView } from './components/comunidadJuvenil/ComunidadJuvenilView';
-import { ChristianAIHub } from './components/ai/ChristianAIHub';
-import { auth, db, testConnection } from './firebase/config';
-import { Loader2 } from 'lucide-react';
-import { User } from './types';
+import { testConnection } from './firebase/config';
+import { Loader2, Flame } from 'lucide-react';
+
+// Lazy load heavy secondary portals for optimal bundle size and instant initial load
+const ChristianAIHub = lazy(() => import('./components/ai/ChristianAIHub').then(m => ({ default: m.ChristianAIHub })));
+const BibleGames = lazy(() => import('./components/games/BibleGames').then(m => ({ default: m.BibleGames })));
+const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const ChristianCinemaPortal = lazy(() => import('./components/cinema/ChristianCinemaPortal').then(m => ({ default: m.ChristianCinemaPortal })));
+const LiveTVPortal = lazy(() => import('./components/tv/LiveTVPortal').then(m => ({ default: m.LiveTVPortal })));
+const ChristianBooksPortal = lazy(() => import('./components/library/ChristianBooksPortal').then(m => ({ default: m.ChristianBooksPortal })));
+const AdventistHymnalPortal = lazy(() => import('./components/hymnal/AdventistHymnalPortal').then(m => ({ default: m.AdventistHymnalPortal })));
+const YouthActivitiesPortal = lazy(() => import('./components/activities/YouthActivitiesPortal').then(m => ({ default: m.YouthActivitiesPortal })));
+const YouthMaterialsPortal = lazy(() => import('./components/materials/YouthMaterialsPortal').then(m => ({ default: m.YouthMaterialsPortal })));
+const CommunitiesPortal = lazy(() => import('./components/communities/CommunitiesPortal').then(m => ({ default: m.CommunitiesPortal })));
+const ComunidadJuvenilView = lazy(() => import('./components/comunidadJuvenil/ComunidadJuvenilView').then(m => ({ default: m.ComunidadJuvenilView })));
+const AdventistNewsView = lazy(() => import('./components/news/AdventistNewsView').then(m => ({ default: m.AdventistNewsView })));
+const ChannelsView = lazy(() => import('./components/channels/ChannelsView').then(m => ({ default: m.ChannelsView })));
+const ChurchesView = lazy(() => import('./components/churches/ChurchesView').then(m => ({ default: m.ChurchesView })));
+const LeaderboardView = lazy(() => import('./components/ranking/LeaderboardView').then(m => ({ default: m.LeaderboardView })));
+const OfficialSourcesView = lazy(() => import('./components/official/OfficialSourcesView').then(m => ({ default: m.OfficialSourcesView })));
+const NotificationsView = lazy(() => import('./components/notifications/NotificationsView').then(m => ({ default: m.NotificationsView })));
+
+const ViewLoadingFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[350px] p-8 space-y-3">
+    <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+    <span className="text-xs text-slate-400 font-medium">Cargando sección...</span>
+  </div>
+);
 
 const MainLayout: React.FC = () => {
   const { 
+    isAuthenticated,
+    isAuthReady,
     activeTab, 
     setActiveTab, 
     selectedUserId, 
-    setSelectedUserId,
     isAccountSwitching,
     accountSwitchingMessage 
   } = useApp();
+
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -66,13 +77,56 @@ const MainLayout: React.FC = () => {
   // Initialize and test Firebase connection
   useEffect(() => {
     testConnection();
-
-    // Check if user has registered; if not, open registration flow first
-    const isRegistered = localStorage.getItem('apdf_registered');
-    if (!isRegistered) {
-      setActiveTab('onboarding');
-    }
   }, []);
+
+  // 1. Splash screen while Firebase Auth state is initializing
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-500 shadow-xl shadow-amber-500/10 animate-pulse">
+          <Flame className="h-8 w-8 text-amber-500" />
+        </div>
+        <div className="text-center space-y-1.5">
+          <h1 className="text-xl font-black text-white tracking-wider font-heading uppercase">
+            A Prueba de Fuego
+          </h1>
+          <p className="text-xs text-amber-400 font-medium tracking-wide">
+            Comunidad Juvenil Cristiana
+          </p>
+        </div>
+        <Loader2 className="w-5 h-5 text-amber-500 animate-spin mt-4" />
+      </div>
+    );
+  }
+
+  // 2. Mandatory Auth Gate: Block unauthenticated users from internal screens
+  if (!isAuthenticated && activeTab !== 'onboarding') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+        <AuthGateScreen 
+          onOpenLogin={() => {
+            setAuthModalMode('login');
+            setShowAuthModal(true);
+          }}
+          onOpenRegister={() => {
+            setAuthModalMode('register');
+            setShowAuthModal(true);
+          }}
+        />
+
+        {/* Auth Modal for Email/Password */}
+        <AuthModal
+          isOpen={showAuthModal}
+          initialMode={authModalMode}
+          onClose={() => setShowAuthModal(false)}
+          onRegistrationSuccess={(userData) => {
+            setOnboardingInitialData(userData);
+            setActiveTab('onboarding');
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
@@ -89,43 +143,45 @@ const MainLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 pb-20 pt-2">
-        {activeTab === 'inicio' && <HomeFeed />}
-        {activeTab === 'descubrir' && <DiscoverYouth />}
-        {activeTab === 'retos' && <ChallengesView />}
-        {activeTab === 'eventos' && <EventsView />}
-        {activeTab === 'perfil' && (
-          <PlayerCardProfile userId={selectedUserId} />
-        )}
-        {activeTab === 'chat' && <ChatView />}
-        {activeTab === 'oracion' && <PrayerWall />}
-        {activeTab === 'juegos' && <BibleGames />}
-        {activeTab === 'canales' && <ChannelsView />}
-        {activeTab === 'ranking' && <LeaderboardView />}
-        {activeTab === 'oficial' && <OfficialSourcesView />}
-        {activeTab === 'iglesias' && <ChurchesView />}
-        {activeTab === 'cine' && <ChristianCinemaPortal />}
-        {activeTab === 'actividades' && <YouthActivitiesPortal />}
-        {activeTab === 'materiales' && <YouthMaterialsPortal />}
-        {activeTab === 'comunidades' && <CommunitiesPortal />}
-        {activeTab === 'en_vivo' && <LiveStreamingPortal />}
-        {activeTab === 'tv' && <LiveTVPortal />}
-        {activeTab === 'libros' && <ChristianBooksPortal />}
-        {activeTab === 'himnario' && <AdventistHymnalPortal />}
-        {activeTab === 'noticias' && <AdventistNewsView />}
-        {activeTab === 'comunidad_juvenil' && <ComunidadJuvenilView />}
-        {activeTab === 'ia_studio' && <ChristianAIHub />}
-        {activeTab === 'admin' && <AdminDashboard />}
-        {activeTab === 'notificaciones' && <NotificationsView />}
-        {activeTab === 'onboarding' && (
-          <OnboardingFlow 
-            onCancel={() => setActiveTab('inicio')}
-            initialUserData={onboardingInitialData}
-            onOpenAuthModal={() => {
-              setAuthModalMode('login');
-              setShowAuthModal(true);
-            }}
-          />
-        )}
+        <Suspense fallback={<ViewLoadingFallback />}>
+          {activeTab === 'inicio' && <HomeFeed />}
+          {activeTab === 'descubrir' && <DiscoverYouth />}
+          {activeTab === 'retos' && <ChallengesView />}
+          {activeTab === 'eventos' && <EventsView />}
+          {activeTab === 'perfil' && (
+            <PlayerCardProfile userId={selectedUserId} />
+          )}
+          {activeTab === 'chat' && <ChatView />}
+          {activeTab === 'oracion' && <PrayerWall />}
+          {activeTab === 'juegos' && <BibleGames />}
+          {activeTab === 'canales' && <ChannelsView />}
+          {activeTab === 'ranking' && <LeaderboardView />}
+          {activeTab === 'oficial' && <OfficialSourcesView />}
+          {activeTab === 'iglesias' && <ChurchesView />}
+          {activeTab === 'cine' && <ChristianCinemaPortal />}
+          {activeTab === 'actividades' && <YouthActivitiesPortal />}
+          {activeTab === 'materiales' && <YouthMaterialsPortal />}
+          {activeTab === 'comunidades' && <CommunitiesPortal />}
+          {activeTab === 'en_vivo' && <LiveStreamingPortal />}
+          {activeTab === 'tv' && <LiveTVPortal />}
+          {activeTab === 'libros' && <ChristianBooksPortal />}
+          {activeTab === 'himnario' && <AdventistHymnalPortal />}
+          {activeTab === 'noticias' && <AdventistNewsView />}
+          {activeTab === 'comunidad_juvenil' && <ComunidadJuvenilView />}
+          {activeTab === 'ia_studio' && <ChristianAIHub />}
+          {activeTab === 'admin' && <AdminDashboard />}
+          {activeTab === 'notificaciones' && <NotificationsView />}
+          {activeTab === 'onboarding' && (
+            <OnboardingFlow 
+              onCancel={() => setActiveTab('inicio')}
+              initialUserData={onboardingInitialData}
+              onOpenAuthModal={() => {
+                setAuthModalMode('login');
+                setShowAuthModal(true);
+              }}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* Bottom Navigation */}

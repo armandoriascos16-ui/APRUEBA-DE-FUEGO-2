@@ -223,7 +223,7 @@ service cloud.firestore {
 
     // 12. Notifications
     match /notifications/{notificationId} {
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && isValidId(notificationId);
       allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.userId || isAdmin());
     }
@@ -282,6 +282,12 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
     }
 
+    // 20b. Churches (Directorio Oficial de Iglesias Adventistas)
+    match /churches/{churchId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // 21. Point Transactions (Auditable Ledger)
     match /point_transactions/{txId} {
       allow read: if isSignedIn();
@@ -306,7 +312,7 @@ service cloud.firestore {
 
     // 24. Ideas JA & Fondos (Biblioteca Colaborativa de Ideas y Planes)
     match /ideas_ja/{ideaId} {
-      allow read: if (resource.data.status == 'approved') || (isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin()));
+      allow read: if true;
       allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid && isValidId(ideaId);
       allow update: if isSignedIn() && isValidId(ideaId) && (
         (resource.data.authorId == request.auth.uid && request.resource.data.authorId == request.auth.uid && (request.resource.data.status == 'pending' || request.resource.data.status == 'draft' || resource.data.status == 'changes_requested')) ||

@@ -98,6 +98,16 @@ export async function initializeFirestoreData(): Promise<void> {
     // 0. Verify connection to Firestore at boot
     await testConnection();
 
+    // Only authorized administrators may seed official collections on remote database
+    const userEmail = auth.currentUser?.email;
+    const isAdmin = auth.currentUser && (
+      userEmail === 'harmonymusis@gmail.com' || 
+      userEmail === 'harmonyestampadosr@gmail.com'
+    );
+    if (!isAdmin) {
+      return;
+    }
+
     // 1. Seed Posts if empty
     const postsCol = collection(db, 'posts');
     const postsSnap = await getDocs(postsCol);
@@ -312,6 +322,9 @@ export async function getAuthEventsFromFirestore(): Promise<AuthEvent[]> {
 }
 
 export function subscribeToAuthEventsFromFirestore(onUpdate: (events: AuthEvent[]) => void): () => void {
+  if (!auth.currentUser) {
+    return () => {};
+  }
   const path = 'auth_events';
   try {
     const q = query(collection(db, path), limit(300));
@@ -323,7 +336,7 @@ export function subscribeToAuthEventsFromFirestore(onUpdate: (events: AuthEvent[
         onUpdate(events);
       },
       (error) => {
-        console.warn('Subscription error on auth_events:', error);
+        console.warn('Subscription notice on auth_events:', error);
       }
     );
   } catch (error) {
@@ -1443,6 +1456,9 @@ export function subscribeToUserNotificationsFromFirestore(
   userId: string,
   onUpdate: (notifications: NotificationItem[]) => void
 ): () => void {
+  if (!auth.currentUser || !userId) {
+    return () => {};
+  }
   const path = 'notifications';
   try {
     const q = query(collection(db, path), where('userId', '==', userId));
@@ -1803,6 +1819,7 @@ export async function getPointTransactionsForUser(userId: string): Promise<Point
 }
 
 export async function getAllPointTransactionsFromFirestore(): Promise<PointTransaction[]> {
+  if (!auth.currentUser) return [];
   const path = 'point_transactions';
   try {
     const q = query(collection(db, path), limit(200));

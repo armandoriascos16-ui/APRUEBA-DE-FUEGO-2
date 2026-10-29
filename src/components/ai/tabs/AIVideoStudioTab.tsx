@@ -31,11 +31,14 @@ export const AIVideoStudioTab: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const [isQuotaError, setIsQuotaError] = useState(false);
+
   const handleGenerateVideo = async () => {
     if ((!prompt.trim() && !selectedImage) || isLoading) return;
 
     setIsLoading(true);
     setErrorMsg(null);
+    setIsQuotaError(false);
 
     try {
       const res = await fetch('/api/ai/generate-video', {
@@ -51,6 +54,11 @@ export const AIVideoStudioTab: React.FC = () => {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (res.status === 402 || errData.code === 'RESOURCE_EXHAUSTED') {
+          setIsQuotaError(true);
+          setErrorMsg(errData.error || 'La generación de video con IA (Gemini Omni Flash) no está disponible temporalmente por límite de cuota o facturación en Google Cloud / Gemini API. Se requiere saldo activo en el proyecto.');
+          return;
+        }
         throw new Error(errData.error || `Error ${res.status}: Fallo al generar video`);
       }
 
@@ -238,8 +246,20 @@ export const AIVideoStudioTab: React.FC = () => {
           </button>
 
           {errorMsg && (
-            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3 rounded-xl text-xs">
-              {errorMsg}
+            <div className={`p-4 rounded-xl text-xs space-y-2 ${
+              isQuotaError 
+                ? 'bg-amber-500/10 border border-amber-500/30 text-amber-200' 
+                : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+            }`}>
+              <div className="flex items-start gap-2">
+                <span className="font-semibold text-[13px]">{isQuotaError ? 'ℹ️ Disponibilidad del Servicio:' : '⚠️ Error al generar:'}</span>
+              </div>
+              <p className="leading-relaxed">{errorMsg}</p>
+              {isQuotaError && (
+                <div className="pt-2 border-t border-amber-500/20 text-[11px] text-amber-300/80">
+                  El resto de herramientas de IA (Chat Teológico, Generador de Bocetos y Arte JA) continúan plenamente operativas.
+                </div>
+              )}
             </div>
           )}
         </div>

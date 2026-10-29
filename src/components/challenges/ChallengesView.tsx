@@ -1,12 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Challenge, Badge, ChallengeSubmission } from '../../types';
 import { SubmitEvidenceModal } from './SubmitEvidenceModal';
 import { WeeklyConsistencyWidget } from './WeeklyConsistencyWidget';
-import { BibleGames } from '../games/BibleGames';
 import { DAILY_CHALLENGES_SCHEDULE } from '../../data/adventistResourcesData';
 import { calculateLevel } from '../../data/seedData';
 import confetti from 'canvas-confetti';
+
+const BibleGames = lazy(() => import('../games/BibleGames').then(m => ({ default: m.BibleGames })));
 import { 
   Flame, 
   Clock, 
@@ -1163,7 +1164,9 @@ export const ChallengesView: React.FC = () => {
       {/* VIEW 6: JUEGOS BÍBLICOS JA */}
       {viewTab === 'games' && (
         <div className="rounded-3xl bg-slate-900/50 border border-slate-800/80 p-1 sm:p-3 animate-in fade-in duration-200">
-          <BibleGames />
+          <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Cargando juegos bíblicos...</div>}>
+            <BibleGames />
+          </Suspense>
         </div>
       )}
 

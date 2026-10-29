@@ -763,8 +763,32 @@ app.post('/api/ai/generate-video', async (req, res) => {
 
     res.status(500).json({ error: 'No se generó el video esperado.' });
   } catch (error: any) {
-    console.error('Error in /api/ai/generate-video:', error);
-    res.status(500).json({ error: sanitizeErrorMessage(error) });
+    const rawMsg = error?.message || String(error);
+    const status = error?.status || error?.statusCode || 500;
+    console.error(`[AI Video Studio] Error in /api/ai/generate-video (status: ${status}):`, rawMsg);
+
+    const isQuotaOrBilling = 
+      status === 402 || 
+      status === 429 || 
+      rawMsg.includes('402') || 
+      rawMsg.includes('RESOURCE_EXHAUSTED') || 
+      rawMsg.includes('Payment Required') ||
+      rawMsg.includes('quota') || 
+      rawMsg.includes('billing');
+
+    if (isQuotaOrBilling) {
+      return res.status(402).json({
+        code: 'RESOURCE_EXHAUSTED',
+        error: 'La generación de video con IA (Gemini Omni Flash) no está disponible por el momento. Se requiere habilitar facturación o ampliar la cuota del servicio en Google Cloud / Gemini API.',
+        retryable: false,
+      });
+    }
+
+    return res.status(status >= 400 && status < 600 ? status : 500).json({
+      code: 'GENERATION_ERROR',
+      error: sanitizeErrorMessage(error),
+      retryable: status >= 500
+    });
   }
 });
 
@@ -926,13 +950,24 @@ wss.on('connection', async (clientWs: WebSocket) => {
   }
 });
 
-// Upgrade WebSocket for /live-ws
+let viteDevServer: any = null;
+
+// Upgrade WebSocket for /live-ws and Vite dev server
 httpServer.on('upgrade', (request, socket, head) => {
-  const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
-  if (pathname === '/live-ws') {
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
+  try {
+    const { pathname } = new URL(request.url || '', `http://${request.headers.host || 'localhost'}`);
+    if (pathname === '/live-ws') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+      return;
+    }
+
+    if (viteDevServer?.ws) {
+      viteDevServer.ws.handleUpgrade(request, socket, head);
+    }
+  } catch (err) {
+    console.warn('[HTTP Server] WebSocket upgrade notice:', err);
   }
 });
 
@@ -943,10 +978,15 @@ async function startServer() {
   const isProd = process.env.NODE_ENV === 'production';
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
+    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : { server: httpServer },
+      },
       appType: 'spa',
     });
+    viteDevServer = vite;
     app.use(vite.middlewares);
   } else {
     app.use(express.static('dist'));

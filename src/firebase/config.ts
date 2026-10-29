@@ -65,23 +65,20 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): void {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
-    },
-    operationType,
-    path
+  const isPermission = (error as any)?.code === 'permission-denied' || String(error).includes('insufficient permissions');
+  const safeLog = {
+    operation: operationType,
+    collectionOrPath: path,
+    isAuthenticated: Boolean(auth.currentUser),
+    uidPrefix: auth.currentUser?.uid ? `${auth.currentUser.uid.slice(0, 6)}...` : 'anonymous',
+    errorCategory: isPermission ? 'PERMISSION_DENIED' : 'NETWORK_OR_TRANSPORT',
+    code: (error as any)?.code || 'unknown',
   };
-  console.warn('Firestore Operation Notice: ', JSON.stringify(errInfo));
+  if (isPermission) {
+    console.warn('[Firestore Access Notice] Operación denegada por reglas de seguridad:', JSON.stringify(safeLog));
+  } else {
+    console.info('[Firestore Network Notice] Operación diferida por conexión de red:', JSON.stringify(safeLog));
+  }
 }
 
 // Connection test
