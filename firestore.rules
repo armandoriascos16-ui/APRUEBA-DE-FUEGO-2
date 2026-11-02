@@ -30,7 +30,14 @@ service cloud.firestore {
 
     // 1. Users
     match /users/{userId} {
-      allow read: if true;
+      // Perfiles públicos consultables por usuarios autenticados.
+      // Perfiles privados solo consultables por el propietario o administradores.
+      allow get: if isSignedIn() && (
+        resource.data.privacy.isProfilePublic != false || 
+        request.auth.uid == userId || 
+        isAdmin()
+      );
+      allow list: if isSignedIn();
 
       // Only the authenticated account owner or admin can create their profile.
       allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidId(userId) &&
@@ -41,7 +48,7 @@ service cloud.firestore {
           isAdmin()
         );
 
-      // Account owner or admin can update full profile. Other signed-in users can update followerIds (follow/unfollow).
+      // Account owner or admin can update full profile and privacy. Other signed-in users can only follow/unfollow (followerIds).
       allow update: if (
         isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidId(userId) &&
         (
@@ -70,24 +77,32 @@ service cloud.firestore {
     // 2. Posts
     match /posts/{postId} {
       allow read: if true;
-      allow create: if isValidId(postId) && (
+      allow create: if isValidId(postId) && isSignedIn() && (
         (isAdmin() && request.resource.data.isOfficial == true) ||
-        (isSignedIn() && request.resource.data.isOfficial == false)
+        (request.resource.data.authorId == request.auth.uid && request.resource.data.isOfficial == false)
       );
-      allow update: if isSignedIn() && isValidId(postId);
-      allow delete: if isSignedIn();
+      // Solo el autor o admin puede editar el contenido. Otros usuarios autenticados solo pueden interactuar.
+      allow update: if isSignedIn() && isValidId(postId) && (
+        request.auth.uid == resource.data.authorId || 
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'userReactions', 'viewsCount', 'sharesCount'])
+      );
+      // Solo el autor de la publicación o un administrador puede eliminarla
+      allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
 
       // Subcolección 'comments' dentro de cada publicación
       match /comments/{commentId} {
         allow read: if true;
-        allow create, update: if isSignedIn() && isValidId(commentId);
-        allow delete: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(commentId);
+        allow update: if isSignedIn() && isValidId(commentId) && (request.auth.uid == resource.data.authorId || isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+        allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
 
         // Subcolección de respuestas anidadas
         match /replies/{replyId} {
           allow read: if true;
-          allow create, update: if isSignedIn() && isValidId(replyId);
-          allow delete: if isSignedIn();
+          allow create: if isSignedIn() && isValidId(replyId);
+          allow update: if isSignedIn() && isValidId(replyId) && (request.auth.uid == resource.data.authorId || isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+          allow delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
         }
       }
     }
@@ -108,8 +123,8 @@ service cloud.firestore {
     // 4. Comments (Colección general)
     match /comments/{commentId} {
       allow read: if true;
-      allow create, update: if isSignedIn() && isValidId(commentId);
-      allow delete: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(commentId);
+      allow update, delete: if isSignedIn() && (request.auth.uid == resource.data.authorId || isAdmin());
     }
 
     // 5. Reactions (Colección general)
@@ -122,8 +137,22 @@ service cloud.firestore {
     // 6. Stories & Subcollections (Comments, Reactions, Views)
     match /stories/{storyId} {
       allow read: if true;
-      allow create, update: if isValidId(storyId);
-      allow delete: if isSignedIn();
+      allow create: if isValidId(storyId) && isSignedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.authorId == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isSignedIn() && isValidId(storyId) && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.authorId ||
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'viewerIds', 'reactions', 'reactionsCount', 'commentsCount'])
+      );
+      allow delete: if isSignedIn() && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.authorId || 
+        isAdmin()
+      );
 
       // Subcolección de comentarios en historias: lectura pública, creación autenticada por autor
       match /comments/{commentId} {

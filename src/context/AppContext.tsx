@@ -445,18 +445,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const currentUser: User = useMemo(() => {
     if (!rawCurrentUser) {
       return {
-        ...ADMIN_USER,
         id: currentUserId || 'unauthenticated_guest',
         name: 'Joven',
-        lastName: 'Invitado',
-        username: 'invitado',
+        lastName: 'Cristiano',
+        username: currentUserId ? `joven_${currentUserId.slice(0, 5)}` : 'invitado',
         email: '',
         avatar: '',
-        role: 'user',
+        age: 18,
+        birthDate: '2008-01-01',
+        city: 'Colombia',
+        country: 'Colombia',
+        church: 'Iglesia Adventista del Séptimo Día',
+        district: 'Distrito Juvenil',
+        zone: 'Zona Misionera',
+        isAdventist: true,
+        yearsServing: 1,
+        ministries: ['Ministerio Juvenil JA'],
+        activities: ['trabajar_jovenes'],
+        maritalStatus: 'soltero',
+        interests: ['Biblia', 'Música', 'Misión'],
+        bio: 'Joven adventista participando en la comunidad A Prueba de Fuego.',
         points: 0,
         level: 1,
         levelName: 'Explorador de la Fe',
+        role: 'user',
         isOfficialVerified: false,
+        emailVerified: false,
         badges: [],
         followingIds: [],
         followerIds: [],
@@ -474,8 +488,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         privacy: {
           isProfilePublic: true,
           showLocation: true,
-          allowDirectMessages: false,
-          allowPrayerMentions: false,
+          allowDirectMessages: true,
+          allowPrayerMentions: true,
         }
       };
     }
@@ -1038,13 +1052,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             providerId: s.providerId
           })));
 
-          // Si el usuario ya había seleccionado activamente otra cuenta en este dispositivo, respetamos su elección
-          const activeStoredUid = getActiveSessionUid();
-          const shouldKeepStored = activeStoredUid && res.sessions.some(s => s.uid === activeStoredUid || s.id === activeStoredUid);
-          const targetUid = shouldKeepStored ? activeStoredUid : user.uid;
+          // La cuenta autenticada en Firebase Auth es el usuario activo primario
+          const targetUid = user.uid;
 
           setCurrentUserId(targetUid);
           setActiveSessionUid(targetUid);
+          setSelectedUserId(null); // Limpiar perfil seleccionado anterior para que siempre cargue el propio
 
           // Registrar evento de auditoría de autenticación
           recordAuthEventInFirestore({
@@ -1109,7 +1122,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginAs = (userId: string) => {
     setCurrentUserId(userId);
+    setActiveSessionUid(userId);
+    setSelectedUserId(null);
     localStorage.setItem('apdf_current_user_id', userId);
+    localStorage.setItem('apdf_registered', 'true');
   };
 
   // Registro automático de la cuenta activa en la lista de cuentas guardadas en el dispositivo (máximo 2)
@@ -2789,6 +2805,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return u;
     }));
+
+    // Sincronizar sesiones guardadas para que la privacidad y cambios persistan de inmediato
+    setSavedSessions(prev => prev.map(s => {
+      if (s.uid === currentUser.id || s.id === currentUser.id) {
+        return {
+          ...s,
+          displayName: updates.name ? `${updates.name} ${updates.lastName || ''}`.trim() : s.displayName,
+          photoURL: updates.avatar !== undefined ? updates.avatar : s.photoURL,
+          church: updates.church !== undefined ? updates.church : s.church,
+          city: updates.city !== undefined ? updates.city : s.city,
+          points: updates.points !== undefined ? updates.points : s.points,
+          level: updates.level !== undefined ? updates.level : s.level,
+        };
+      }
+      return s;
+    }));
+
+    setSavedAccounts(prev => prev.map(a => {
+      if (a.id === currentUser.id) {
+        return {
+          ...a,
+          name: updates.name ? `${updates.name} ${updates.lastName || ''}`.trim() : a.name,
+          avatar: updates.avatar !== undefined ? updates.avatar : a.avatar,
+          church: updates.church !== undefined ? updates.church : a.church,
+          points: updates.points !== undefined ? updates.points : a.points,
+          level: updates.level !== undefined ? updates.level : a.level,
+        };
+      }
+      return a;
+    }));
+
     updateUserInFirestore(currentUser.id, updates).catch(e => console.warn('Firestore update profile fallback:', e));
   };
 

@@ -21,7 +21,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export const StoriesBar: React.FC<StoriesBarProps> = ({ onOpenCreateStory, onSelectStory }) => {
-  const { currentUser, stories, isStoryExpired } = useApp();
+  const { currentUser, allUsers, stories, isStoryExpired } = useApp();
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
 
   // Cronómetro en tiempo real cada 10s para expirar estados exactamente a las 24 horas
@@ -32,8 +32,18 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({ onOpenCreateStory, onSel
     return () => clearInterval(timer);
   }, []);
 
-  // Filtrar estados activos: exactamente 24h desde su createdAt
+  // Filtrar estados activos: exactamente 24h desde su createdAt y respetando la privacidad del usuario
   const activeStories = stories.filter(story => {
+    // Si el creador del estado tiene perfil privado, solo él o un administrador pueden verlo
+    const author = allUsers.find(u => u.id === story.authorId);
+    if (author && author.privacy?.isProfilePublic === false) {
+      const isViewerAuthor = currentUser.id === story.authorId;
+      const isViewerAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+      if (!isViewerAuthor && !isViewerAdmin) {
+        return false;
+      }
+    }
+
     if (!story.expiresAt) return true;
     const exp = new Date(story.expiresAt).getTime();
     if (isNaN(exp)) return true;

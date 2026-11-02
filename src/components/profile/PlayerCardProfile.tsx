@@ -42,11 +42,53 @@ interface PlayerCardProfileProps {
 }
 
 export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) => {
-  const { currentUser, allUsers, posts, submissions, updateUserProfile, setActiveTab, triggerCelebration, followUser } = useApp();
+  const { 
+    currentUser, 
+    allUsers, 
+    posts, 
+    submissions, 
+    updateUserProfile, 
+    setActiveTab, 
+    triggerCelebration, 
+    followUser,
+    setSelectedUserId 
+  } = useApp();
   
-  // Show selected user or current user
-  const user = userId ? (allUsers.find(u => u.id === userId) || currentUser) : currentUser;
+  // Resolución estricta de usuario: si se pasa un userId, buscar exactamente en allUsers
+  const targetUser = userId 
+    ? (userId === currentUser.id ? currentUser : allUsers.find(u => u.id === userId))
+    : currentUser;
+
+  // Si se solicitó un usuario específico que no existe, mostrar pantalla de error en vez de mostrar al administrador o al usuario actual
+  if (userId && !targetUser) {
+    return (
+      <div className="w-full max-w-3xl mx-auto px-3 sm:px-6 py-8">
+        <div className="text-center py-12 rounded-3xl bg-slate-900 border border-slate-800 p-8 space-y-4 shadow-xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-7 h-7" />
+          </div>
+          <h2 className="text-lg font-black text-white">Perfil no disponible</h2>
+          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+            El perfil que intentas consultar no existe o aún se está sincronizando con la base de datos de usuarios registrados.
+          </p>
+          <button
+            onClick={() => {
+              setSelectedUserId(null);
+              setActiveTab('perfil');
+            }}
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-colors shadow-md active:scale-95"
+          >
+            ← Volver a mi propio perfil
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const user = targetUser || currentUser;
   const isSelf = user.id === currentUser.id;
+  const isViewerAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+  const isProfilePrivateForViewer = !isSelf && user.privacy?.isProfilePublic === false && !isViewerAdmin;
 
   const userApprovedSubmissions = (submissions || []).filter(s => s.userId === user.id && s.status === 'approved');
 
@@ -144,6 +186,33 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
   return (
     <div className="w-full max-w-3xl mx-auto px-3 sm:px-6 py-4">
       
+      {/* Barra superior de navegación cuando se consulta el perfil de otro usuario */}
+      {!isSelf && (
+        <div className="flex items-center justify-between mb-4 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 shadow-md">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedUserId(null);
+              setActiveTab('perfil');
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors"
+          >
+            <span>← Volver a mi propio perfil</span>
+          </button>
+          {isProfilePrivateForViewer ? (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-black">
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+              <span>Perfil Privado</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-black">
+              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Perfil Público</span>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Hidden Avatar File Input */}
       {isSelf && (
         <input
@@ -171,7 +240,7 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
             activeTab === 'posts' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          Publicaciones ({userPosts.length})
+          {isProfilePrivateForViewer ? 'Publicaciones (🔒)' : `Publicaciones (${userPosts.length})`}
         </button>
         <button
           onClick={() => setActiveTabState('retos')}
@@ -179,7 +248,7 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
             activeTab === 'retos' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
           }`}
         >
-          Retos ({userApprovedSubmissions.length})
+          {isProfilePrivateForViewer ? 'Retos (🔒)' : `Retos (${userApprovedSubmissions.length})`}
         </button>
         <button
           onClick={() => setActiveTabState('badges')}
@@ -283,6 +352,80 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Tarjeta de Control de Privacidad de la Cuenta (Público vs Privado) */}
+          {isSelf && (
+            <div className={`rounded-3xl p-4 sm:p-5 border shadow-xl transition-all ${
+              user.privacy?.isProfilePublic !== false
+                ? 'bg-gradient-to-r from-emerald-950/30 via-slate-900 to-slate-900 border-emerald-500/40'
+                : 'bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border-amber-500/40'
+            }`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2.5 rounded-2xl shrink-0 mt-0.5 ${
+                    user.privacy?.isProfilePublic !== false
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-amber-500/20 text-amber-400'
+                  }`}>
+                    {user.privacy?.isProfilePublic !== false ? (
+                      <Eye className="h-5 w-5" />
+                    ) : (
+                      <Lock className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-black text-white">
+                        Privacidad: {user.privacy?.isProfilePublic !== false ? 'Perfil Público 🌐' : 'Perfil Privado 🔒'}
+                      </h3>
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                        user.privacy?.isProfilePublic !== false
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      }`}>
+                        {user.privacy?.isProfilePublic !== false ? 'Visible para todos' : 'Protegido'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                      {user.privacy?.isProfilePublic !== false
+                        ? 'Cualquier joven registrado puede encontrarte en "Descubrir", entrar a tu ficha y ver tus publicaciones y Estados espirituales.'
+                        : 'Tu cuenta está protegida. Solo tú puedes consultar tus publicaciones y Estados. Los demás usuarios verán tu perfil bloqueado.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextState = !(user.privacy?.isProfilePublic !== false);
+                    updateUserProfile({
+                      privacy: {
+                        ...user.privacy,
+                        isProfilePublic: nextState
+                      }
+                    });
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md active:scale-95 shrink-0 ${
+                    user.privacy?.isProfilePublic !== false
+                      ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30'
+                      : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                  }`}
+                >
+                  {user.privacy?.isProfilePublic !== false ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Cambiar a Privado</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Cambiar a Público</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
@@ -441,6 +584,18 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
 
             </div>
 
+            {isProfilePrivateForViewer ? (
+              <div className="mt-6 rounded-3xl bg-slate-950/80 border-2 border-dashed border-amber-500/40 p-8 text-center space-y-3 shadow-xl">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+                  <Lock className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-black text-white">🔒 Perfil Privado</h3>
+                <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                  {user.name} ha configurado su cuenta como <strong>privada</strong>. Solo el propietario puede entrar y consultar sus publicaciones, Estados espirituales, rachas y detalles misioneros.
+                </p>
+              </div>
+            ) : (
+              <>
             {/* Level Progress Bar to Next Level */}
             <div className="mt-5 pb-5 border-b border-slate-800">
               <div className="flex items-center justify-between text-xs mb-1.5">
@@ -607,6 +762,8 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
                 </button>
               </div>
             )}
+              </>
+            )}
 
           </div>
 
@@ -659,7 +816,17 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
             </div>
           )}
 
-          {userPosts.length === 0 ? (
+          {isProfilePrivateForViewer ? (
+            <div className="text-center py-16 rounded-3xl bg-slate-900 border border-slate-800 p-8 space-y-3 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+                <Lock className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-black text-white">Publicaciones Privadas</h3>
+              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                {user.name} ha configurado su cuenta como privada. Solo el propietario puede consultar sus publicaciones, fotos y videos.
+              </p>
+            </div>
+          ) : userPosts.length === 0 ? (
             <div className="text-center py-12 rounded-3xl bg-slate-900 border border-slate-800 p-6">
               <p className="text-sm font-bold text-white">No hay publicaciones de este usuario todavía.</p>
               {isSelf && (
@@ -696,7 +863,17 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
       {/* TAB 3: RETOS CUMPLIDOS */}
       {activeTab === 'retos' && (
         <div className="space-y-3">
-          {userApprovedSubmissions.length === 0 ? (
+          {isProfilePrivateForViewer ? (
+            <div className="text-center py-16 rounded-3xl bg-slate-900 border border-slate-800 p-8 space-y-3 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+                <Lock className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-black text-white">Retos Misioneros Privados</h3>
+              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+                El historial de retos misioneros y evidencias espirituales de este perfil es privado. Solo el propietario puede consultar su progreso.
+              </p>
+            </div>
+          ) : userApprovedSubmissions.length === 0 ? (
             <div className="text-center py-12 rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-2">
               <span className="text-3xl block">🎯</span>
               <p className="text-sm font-bold text-white">No hay retos aprobados registrados todavía.</p>
@@ -769,26 +946,110 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
         </div>
       )}
 
-      {/* TAB 4: SETTINGS & PRIVACY (Section 44) */}
+      {/* TAB 4: SETTINGS & PRIVACY (Control de Perfiles Públicos y Privados) */}
       {activeTab === 'settings' && isSelf && (
-        <div className="rounded-3xl bg-slate-900 border border-slate-800 p-5 space-y-4">
-          <h2 className="text-base font-bold text-white border-b border-slate-800 pb-2">
-            Configuración y Privacidad Juvenil
-          </h2>
+        <div className="rounded-3xl bg-slate-900 border border-slate-800 p-5 space-y-5 shadow-xl">
+          <div className="border-b border-slate-800 pb-3">
+            <h2 className="text-base font-black text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-amber-500" />
+              <span>Control de Privacidad y Visibilidad</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Configura quién puede encontrar tu cuenta y acceder a tus publicaciones y Estados espirituales.
+            </p>
+          </div>
 
+          {/* Opciones Principales de Perfil: Público vs Privado */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-850">
-              <div>
-                <p className="text-xs font-bold text-white">Perfil Público</p>
-                <p className="text-[11px] text-slate-400">Permitir que otros jóvenes vean tu ficha de jugador</p>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              Tipo de Perfil
+            </h3>
+
+            {/* Opción 1: Perfil Público */}
+            <div
+              onClick={() => updateUserProfile({ privacy: { ...user.privacy, isProfilePublic: true } })}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                user.privacy?.isProfilePublic !== false
+                  ? 'bg-emerald-950/30 border-emerald-500/60 ring-2 ring-emerald-500/30 shadow-lg shadow-emerald-950/20'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                    user.privacy?.isProfilePublic !== false
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    <Eye className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-black text-white">Perfil Público</h4>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                        Recomendado
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                      Cualquier usuario registrado en la aplicación puede encontrar tu ficha en Descubrimiento Juvenil, entrar y consultar tu información, tus publicaciones y tus Estados espirituales.
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="radio"
+                  name="privacyProfileOption"
+                  checked={user.privacy?.isProfilePublic !== false}
+                  onChange={() => updateUserProfile({ privacy: { ...user.privacy, isProfilePublic: true } })}
+                  className="h-4 w-4 accent-emerald-500 rounded-full mt-1 shrink-0 cursor-pointer"
+                />
               </div>
-              <input
-                type="checkbox"
-                checked={user.privacy.isProfilePublic}
-                onChange={(e) => updateUserProfile({ privacy: { ...user.privacy, isProfilePublic: e.target.checked } })}
-                className="h-4 w-4 accent-amber-500 rounded"
-              />
             </div>
+
+            {/* Opción 2: Perfil Privado */}
+            <div
+              onClick={() => updateUserProfile({ privacy: { ...user.privacy, isProfilePublic: false } })}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                user.privacy?.isProfilePublic === false
+                  ? 'bg-amber-950/30 border-amber-500/60 ring-2 ring-amber-500/30 shadow-lg shadow-amber-950/20'
+                  : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                    user.privacy?.isProfilePublic === false
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-black text-white">Perfil Privado</h4>
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                        Protegido
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                      Únicamente tú (el propietario) puedes entrar y consultar tus publicaciones y Estados. Los demás usuarios verán tu perfil con indicación de privado y no podrán acceder a tu contenido.
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="radio"
+                  name="privacyProfileOption"
+                  checked={user.privacy?.isProfilePublic === false}
+                  onChange={() => updateUserProfile({ privacy: { ...user.privacy, isProfilePublic: false } })}
+                  className="h-4 w-4 accent-amber-500 rounded-full mt-1 shrink-0 cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Opciones Adicionales de Privacidad
+            </h3>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-850">
               <div>

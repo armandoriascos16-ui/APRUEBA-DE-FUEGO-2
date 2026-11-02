@@ -14,7 +14,7 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ onOpenCreate }) => {
-  const { activeTab, setActiveTab, currentUser, notifications } = useApp();
+  const { activeTab, setActiveTab, currentUser, notifications, setSelectedUserId } = useApp();
 
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
@@ -91,7 +91,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenCreate }) => {
 
         {/* 5. Perfil */}
         <button
-          onClick={() => setActiveTab('perfil')}
+          onClick={() => {
+            setSelectedUserId(null);
+            setActiveTab('perfil');
+          }}
           className={`relative flex min-h-[48px] min-w-[56px] flex-col items-center justify-center transition-all active:scale-90 ${
             activeTab === 'perfil'
               ? 'text-blue-500 font-bold'

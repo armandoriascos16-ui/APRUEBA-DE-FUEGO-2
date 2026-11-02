@@ -68,6 +68,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
     savedAccounts,
     removeSavedAccount,
     switchAccount,
+    setSelectedUserId,
     triggerCelebration
   } = useApp();
 
@@ -100,6 +101,9 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   }, [isOpen, onClose]);
 
   const handleSelectTab = (tab: TabType) => {
+    if (tab === 'perfil') {
+      setSelectedUserId(null);
+    }
     setActiveTab(tab);
     onClose();
   };

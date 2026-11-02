@@ -26,6 +26,7 @@ import {
 export const HomeFeed: React.FC = () => {
   const { 
     currentUser, 
+    allUsers,
     posts, 
     challenges, 
     events, 
@@ -74,6 +75,16 @@ export const HomeFeed: React.FC = () => {
 
   // Algorithm filtering
   const filteredPosts = posts.filter(post => {
+    // Proteger publicaciones de perfiles privados: únicamente el autor o un administrador pueden verlas
+    const author = allUsers.find(u => u.id === post.authorId);
+    if (author && author.privacy?.isProfilePublic === false) {
+      const isViewerAuthor = currentUser.id === post.authorId;
+      const isViewerAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+      if (!isViewerAuthor && !isViewerAdmin) {
+        return false;
+      }
+    }
+
     if (activeFeedTab === 'oficiales') {
       return post.isOfficial;
     }
