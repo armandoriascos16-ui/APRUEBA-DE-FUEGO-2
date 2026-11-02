@@ -52,6 +52,13 @@ export const QuickAccessBar: React.FC = () => {
 
   const shortcuts: Shortcut[] = [
     { 
+      tab: 'perfiles', 
+      title: 'Perfiles', 
+      subtitle: 'Comunidad Registrada', 
+      icon: Users, 
+      color: 'from-amber-500 via-orange-500 to-red-600' 
+    },
+    { 
       tab: 'ia_studio', 
       title: 'IA Cristiana', 
       subtitle: 'Música, Video, 3D & Voz', 

@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PostCard } from '../feed/PostCard';
 import { CreatePostModal } from '../feed/CreatePostModal';
+import { StoryViewerModal } from '../feed/StoryViewerModal';
+import { Story } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 import { AccountSwitcher } from './AccountSwitcher';
 import { compressImageFromGallery } from '../../utils/mediaUtils';
@@ -34,7 +36,9 @@ import {
   AlertTriangle,
   Trash2,
   UserPlus,
-  UserCheck
+  UserCheck,
+  Users,
+  Radio
 } from 'lucide-react';
 
 interface PlayerCardProfileProps {
@@ -46,6 +50,7 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
     currentUser, 
     allUsers, 
     posts, 
+    stories,
     submissions, 
     updateUserProfile, 
     setActiveTab, 
@@ -101,7 +106,16 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
   const [isVerifying, setIsVerifying] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [verificationMsg, setVerificationMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [viewingStory, setViewingStory] = useState<Story | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Estados vigentes (historias activas de las últimas 24 horas del usuario)
+  const activeUserStories = (stories || []).filter(s => {
+    if (s.authorId !== user.id) return false;
+    if (!s.expiresAt) return true;
+    const exp = new Date(s.expiresAt).getTime();
+    return isNaN(exp) || exp > Date.now();
+  });
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,17 +202,31 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
       
       {/* Barra superior de navegación cuando se consulta el perfil de otro usuario */}
       {!isSelf && (
-        <div className="flex items-center justify-between mb-4 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 shadow-md">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedUserId(null);
-              setActiveTab('perfil');
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-colors"
-          >
-            <span>← Volver a mi propio perfil</span>
-          </button>
+        <div className="flex items-center justify-between gap-2 mb-4 bg-slate-900/90 p-3 rounded-2xl border border-slate-800 shadow-md flex-wrap">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedUserId(null);
+                setActiveTab('perfiles');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-black text-slate-950 transition-colors shadow-md active:scale-95"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>← Volver a Perfiles</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedUserId(null);
+                setActiveTab('perfil');
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition-colors"
+            >
+              <span>Mi Perfil</span>
+            </button>
+          </div>
+
           {isProfilePrivateForViewer ? (
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-black">
               <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -531,7 +559,7 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
 
                   {/* Social Action Button when viewing other user */}
                   {!isSelf && (
-                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-3">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 flex-wrap">
                       <button
                         onClick={() => followUser(user.id)}
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 ${
@@ -559,6 +587,31 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
                       >
                         <Mail className="h-3.5 w-3.5" />
                         <span>Mensaje</span>
+                      </button>
+
+                      {!isProfilePrivateForViewer && activeUserStories.length > 0 && (
+                        <button
+                          onClick={() => setViewingStory(activeUserStories[0])}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-slate-950 shadow-md hover:scale-105 active:scale-95 transition-all"
+                          title="Ver estados espirituales activos (24h)"
+                        >
+                          <Radio className="h-3.5 w-3.5" />
+                          <span>Ver Estado ({activeUserStories.length})</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Ver tus propios estados vigentes si existen */}
+                  {isSelf && activeUserStories.length > 0 && (
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mt-3">
+                      <button
+                        onClick={() => setViewingStory(activeUserStories[0])}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-slate-950 shadow-md hover:scale-105 active:scale-95 transition-all"
+                        title="Ver tus estados espirituales vigentes"
+                      >
+                        <Radio className="h-3.5 w-3.5" />
+                        <span>Tu Estado Activo ({activeUserStories.length})</span>
                       </button>
                     </div>
                   )}
@@ -1091,6 +1144,14 @@ export const PlayerCardProfile: React.FC<PlayerCardProfileProps> = ({ userId }) 
         <CreatePostModal
           defaultMediaType={createMediaType}
           onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Modal para ver Estados espirituales vigentes del perfil */}
+      {viewingStory && (
+        <StoryViewerModal
+          story={viewingStory}
+          onClose={() => setViewingStory(null)}
         />
       )}
 

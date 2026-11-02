@@ -101,7 +101,7 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
   }, [isOpen, onClose]);
 
   const handleSelectTab = (tab: TabType) => {
-    if (tab === 'perfil') {
+    if (tab === 'perfil' || tab === 'perfiles') {
       setSelectedUserId(null);
     }
     setActiveTab(tab);
@@ -120,13 +120,21 @@ export const SidebarDrawer: React.FC<SidebarDrawerProps> = ({
 
   const primaryTools: MenuItem[] = [
     {
+      tab: 'perfiles',
+      title: 'PERFILES',
+      subtitle: 'Comunidad y cuentas registradas',
+      icon: Users,
+      color: 'from-amber-500 via-orange-600 to-red-600',
+      badge: 'Nuevo',
+      highlight: true
+    },
+    {
       tab: 'ia_studio',
       title: 'IA Cristiana Unificada',
       subtitle: 'Música, Video, Imagen, Chat, 3D, Voz & Biociencias',
       icon: Sparkles,
       color: 'from-purple-600 via-pink-600 to-amber-500',
-      badge: 'IA Master',
-      highlight: true
+      badge: 'IA Master'
     },
     {
       tab: 'comunidad_juvenil',

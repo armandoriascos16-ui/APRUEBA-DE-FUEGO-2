@@ -4,6 +4,7 @@ import { Navbar } from './components/layout/Navbar';
 import { BottomNav } from './components/layout/BottomNav';
 import { HomeFeed } from './components/feed/HomeFeed';
 import { DiscoverYouth } from './components/discover/DiscoverYouth';
+import { ProfilesDirectory } from './components/profile/ProfilesDirectory';
 import { ChallengesView } from './components/challenges/ChallengesView';
 import { EventsView } from './components/events/EventsView';
 import { PlayerCardProfile } from './components/profile/PlayerCardProfile';
@@ -146,6 +147,7 @@ const MainLayout: React.FC = () => {
         <Suspense fallback={<ViewLoadingFallback />}>
           {activeTab === 'inicio' && <HomeFeed />}
           {activeTab === 'descubrir' && <DiscoverYouth />}
+          {activeTab === 'perfiles' && <ProfilesDirectory />}
           {activeTab === 'retos' && <ChallengesView />}
           {activeTab === 'eventos' && <EventsView />}
           {activeTab === 'perfil' && (

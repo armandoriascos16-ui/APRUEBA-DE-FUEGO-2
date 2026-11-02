@@ -205,6 +205,7 @@ function safeLocalStorageSet(key: string, value: string): void {
 export type TabType = 
   | 'inicio' 
   | 'descubrir' 
+  | 'perfiles'
   | 'retos' 
   | 'eventos' 
   | 'perfil' 

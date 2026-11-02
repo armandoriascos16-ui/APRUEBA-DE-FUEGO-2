@@ -6,6 +6,7 @@ import {
   Plus, 
   Bell, 
   User as UserIcon,
+  Users
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 
@@ -27,30 +28,34 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenCreate }) => {
           onClick={() => setActiveTab('inicio')}
           className={`relative flex min-h-[48px] min-w-[56px] flex-col items-center justify-center transition-all active:scale-90 ${
             activeTab === 'inicio'
-              ? 'text-blue-500 font-bold'
+              ? 'text-amber-500 font-bold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Home className={`h-5 w-5 transition-transform ${activeTab === 'inicio' ? 'stroke-[2.5px] scale-110' : 'stroke-[1.8px]'}`} />
+          <Home className={`h-5 w-5 transition-transform ${activeTab === 'inicio' ? 'stroke-[2.5px] scale-110 text-amber-500' : 'stroke-[1.8px]'}`} />
           <span className="text-[10px] tracking-tight mt-1">Inicio</span>
           {activeTab === 'inicio' && (
-            <div className="absolute bottom-1 h-0.5 w-5 rounded-full bg-blue-500" />
+            <div className="absolute bottom-1 h-0.5 w-5 rounded-full bg-amber-500" />
           )}
         </button>
 
-        {/* 2. Explorar */}
+        {/* 2. Perfiles (Nueva Sección Principal) */}
         <button
-          onClick={() => setActiveTab('descubrir')}
+          onClick={() => {
+            setSelectedUserId(null);
+            setActiveTab('perfiles');
+          }}
           className={`relative flex min-h-[48px] min-w-[56px] flex-col items-center justify-center transition-all active:scale-90 ${
-            activeTab === 'descubrir'
-              ? 'text-blue-500 font-bold'
+            activeTab === 'perfiles'
+              ? 'text-amber-500 font-bold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
+          title="Directorio de Perfiles de la Comunidad"
         >
-          <Compass className={`h-5 w-5 transition-transform ${activeTab === 'descubrir' ? 'stroke-[2.5px] scale-110' : 'stroke-[1.8px]'}`} />
-          <span className="text-[10px] tracking-tight mt-1">Explorar</span>
-          {activeTab === 'descubrir' && (
-            <div className="absolute bottom-1 h-0.5 w-5 rounded-full bg-blue-500" />
+          <Users className={`h-5 w-5 transition-transform ${activeTab === 'perfiles' ? 'stroke-[2.5px] scale-110 text-amber-500' : 'stroke-[1.8px]'}`} />
+          <span className="text-[10px] tracking-tight mt-1">Perfiles</span>
+          {activeTab === 'perfiles' && (
+            <div className="absolute bottom-1 h-0.5 w-5 rounded-full bg-amber-500" />
           )}
         </button>
 

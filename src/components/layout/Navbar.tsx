@@ -38,6 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications, onOpenSearc
     currentUser, 
     registeredUsersCount,
     setActiveTab, 
+    setSelectedUserId,
     notifications,
     isDarkMode,
     setIsDarkMode
@@ -96,15 +97,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications, onOpenSearc
 
           {/* Zone 2: Real Users Count + Search */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Real Counter Badge (Module 3) */}
+            {/* Real Counter Badge (PERFILES) */}
             <button
-              onClick={() => setActiveTab('descubrir')}
+              onClick={() => {
+                setSelectedUserId(null);
+                setActiveTab('perfiles');
+              }}
               className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-xs font-semibold text-slate-300 transition-all shadow-sm"
-              title="Usuarios registrados en la base de datos de A Prueba de Fuego"
+              title="Abrir directorio de PERFILES registrados en A Prueba de Fuego"
             >
               <Users className="h-3.5 w-3.5 text-amber-400" />
               <span className="text-white font-bold tabular-nums">{registeredUsersCount}</span>
-              <span className="text-slate-400 text-[11px]">{registeredUsersCount === 1 ? 'Joven' : 'Jóvenes'}</span>
+              <span className="text-slate-400 text-[11px]">{registeredUsersCount === 1 ? 'Perfil' : 'Perfiles'}</span>
             </button>
 
             <button
@@ -136,6 +140,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNotifications, onOpenSearc
               <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-200 font-bold uppercase tracking-wider ml-0.5 hidden sm:inline">
                 Nv.{currentUser.level}
               </span>
+            </button>
+
+            {/* Direct Perfiles Access Button */}
+            <button
+              onClick={() => {
+                setSelectedUserId(null);
+                setActiveTab('perfiles');
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-amber-500/30 hover:border-amber-400 text-amber-300 hover:text-white transition-all text-xs font-bold shadow-sm"
+              title="Directorio de PERFILES de la comunidad"
+            >
+              <Users className="h-3.5 w-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Perfiles</span>
             </button>
 
             {/* Direct TV Button */}
